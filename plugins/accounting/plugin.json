@@ -1,0 +1,8 @@
+{
+    "name": "Accounting",
+    "slug": "accounting",
+    "version": "1.0.0",
+    "description": "Modul invoice dan pembukuan",
+    "author": "Kamu",
+    "depends": []
+}

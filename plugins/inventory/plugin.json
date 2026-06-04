@@ -1,0 +1,8 @@
+{
+    "name": "Inventory",
+    "slug": "inventory",
+    "version": "1.0.0",
+    "description": "Modul manajemen produk dan stok",
+    "author": "Kamu",
+    "depends": []
+}
