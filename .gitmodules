@@ -1,0 +1,12 @@
+[submodule "erp-plugin-inventory"]
+	path = erp-plugin-inventory
+	url = git@github.com:febriandto/erp-plugin-inventory.git
+[submodule "erp-plugin-accounting"]
+	path = erp-plugin-accounting
+	url = git@github.com:febriandto/erp-plugin-accounting.git
+[submodule "plugins/inventory"]
+	path = plugins/inventory
+	url = git@github.com:febriandto/erp-plugin-inventory.git
+[submodule "plugins/accounting"]
+	path = plugins/accounting
+	url = git@github.com:febriandto/erp-plugin-accounting.git
