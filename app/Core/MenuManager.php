@@ -12,11 +12,12 @@ class MenuManager
     public function add(array $item): void
     {
         $this->items[] = array_merge([
-            'title'  => '',
-            'url'    => '#',
-            'icon'   => 'ti ti-puzzle',
-            'order'  => 100,
-            'active' => '',  // pattern untuk request()->is()
+            'title'    => '',
+            'url'      => '#',
+            'icon'     => 'ti ti-puzzle',
+            'order'    => 100,
+            'active'   => '',
+            'children' => [],
         ], $item);
     }
 

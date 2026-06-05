@@ -12,17 +12,28 @@ class PluginController extends Controller
 
     public function index()
     {
-        $plugins = Plugin::orderBy('name')->get();
-        return view('plugins.index', compact('plugins'));
+        $installed = Plugin::orderBy('name')->get()->keyBy('slug');
+
+        $registry       = $this->manager->fetchRegistry();
+        $registryBySlug = collect($registry)->keyBy('slug');
+
+        $latestVersions     = $registryBySlug->map(fn($item) => $item['version']);
+        $latestDownloadUrls = $registryBySlug->map(fn($item) => $item['download_url'] ?? '');
+
+        return view('plugins.index', compact('installed', 'registry', 'latestVersions', 'latestDownloadUrls'));
     }
 
     public function install(Request $request)
     {
         $request->validate([
-            'github_url' => 'required|url',
+            'github_url'   => 'required|url',
+            'download_url' => 'required|url',
         ]);
 
-        $result = $this->manager->installFromGithub($request->github_url);
+        $result = $this->manager->installFromZip(
+            $request->github_url,
+            $request->download_url
+        );
 
         return back()->with(
             $result['success'] ? 'success' : 'error',
@@ -48,18 +59,22 @@ class PluginController extends Controller
         );
     }
 
-    public function update(Plugin $plugin)
+    public function update(Request $request, Plugin $plugin)
     {
-        $result = $this->manager->update($plugin->slug);
+        $request->validate(['download_url' => 'required|url']);
+
+        $result = $this->manager->update($plugin->slug, $request->download_url);
         return back()->with(
             $result['success'] ? 'success' : 'error',
             $result['message']
         );
     }
 
-    public function uninstall(Plugin $plugin)
+    public function uninstall(Request $request, Plugin $plugin)
     {
-        $result = $this->manager->uninstall($plugin->slug);
+        $removeData = $request->boolean('remove_data', false);
+        $result     = $this->manager->uninstall($plugin->slug, $removeData);
+
         return back()->with(
             $result['success'] ? 'success' : 'error',
             $result['message']

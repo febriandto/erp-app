@@ -11,21 +11,20 @@
 <body class="antialiased">
 <div class="wrapper">
 
+    {{-- LEFT: Vertical sidebar — brand + sub-menu modul aktif --}}
     <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
         <div class="container-fluid">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <h1 class="navbar-brand navbar-brand-autodark">
                 <a href="/">ERP System</a>
             </h1>
-            <div class="collapse navbar-collapse" id="navbar-menu">
+            <div class="collapse navbar-collapse" id="sidebar-menu">
                 <ul class="navbar-nav pt-lg-3">
-
-                    {{-- Menu dinamis dari plugin yang aktif --}}
-                    @foreach($menuItems as $item)
+                    @foreach($sidebarItems as $item)
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is($item['active']) ? 'active' : '' }}"
+                        <a class="nav-link {{ request()->is($item['active'] ?? '') ? 'active' : '' }}"
                            href="{{ $item['url'] }}">
                             <span class="nav-link-icon d-md-none d-lg-inline-block">
                                 <i class="{{ $item['icon'] }}"></i>
@@ -34,29 +33,58 @@
                         </a>
                     </li>
                     @endforeach
-
                 </ul>
-
-                <div class="mt-auto">
-                    <ul class="navbar-nav">
-                        {{-- Menu Plugins — selalu ada, bagian core --}}
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->is('admin/plugins*') ? 'active' : '' }}"
-                               href="{{ route('plugins.index') }}">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-puzzle"></i>
-                                </span>
-                                <span class="nav-link-title">Plugins</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
             </div>
         </div>
     </aside>
 
     <div class="page-wrapper">
+
+        {{-- TOP: Horizontal navbar — daftar modul --}}
+        <header class="navbar navbar-expand-md d-print-none">
+            <div class="container-xl">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('/') || request()->is('dashboard') ? 'active' : '' }}"
+                               href="/">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-home"></i>
+                                </span>
+                                <span class="nav-link-title">Dashboard</span>
+                            </a>
+                        </li>
+                        @foreach($menuItems as $item)
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is($item['active']) ? 'active' : '' }}"
+                               href="{{ $item['url'] }}">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="{{ $item['icon'] }}"></i>
+                                </span>
+                                <span class="nav-link-title">{{ $item['title'] }}</span>
+                            </a>
+                        </li>
+                        @endforeach
+                    </ul>
+                    <div class="ms-auto">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->is('admin/plugins*') ? 'active' : '' }}"
+                                   href="{{ route('plugins.index') }}">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-puzzle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Plugins</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
 
         {{-- Page header --}}
         <div class="page-header d-print-none">

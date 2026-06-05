@@ -1,1 +1,79 @@
 @import "@tabler/core/dist/css/tabler.min.css";
+
+
+/* Dropdown tidak terpotong table-responsive */
+.table-responsive {
+    overflow: visible;
+}
+
+/* Semua tbody row perlu position+z-index agar stacking contest bekerja */
+.table tbody tr {
+    position: relative;
+    z-index: 1;
+}
+
+/* Row yang dropdown-nya terbuka naik di atas semua row lain */
+.table tbody tr:has(.dropdown-menu.show) {
+    z-index: 100;
+}
+
+/* Card yang punya dropdown terbuka naik di atas card/elemen sibling di bawahnya */
+.card:has(.dropdown-menu.show) {
+    position: relative;
+    z-index: 10;
+}
+
+/* ==========================================================================
+   MICRO ANIMATION STANDARDS
+   Gunakan class ini secara konsisten di seluruh app.
+   ========================================================================== */
+
+/* --- Fade-in saat elemen muncul (page load, list items) --- */
+@keyframes erp-fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-fadein {
+    animation: erp-fadein 0.25s ease both;
+}
+
+/* Stagger untuk list: tiap item delay 50ms per index */
+.anim-stagger > * {
+    animation: erp-fadein 0.25s ease both;
+}
+.anim-stagger > *:nth-child(1)  { animation-delay: 0ms; }
+.anim-stagger > *:nth-child(2)  { animation-delay: 50ms; }
+.anim-stagger > *:nth-child(3)  { animation-delay: 100ms; }
+.anim-stagger > *:nth-child(4)  { animation-delay: 150ms; }
+.anim-stagger > *:nth-child(5)  { animation-delay: 200ms; }
+.anim-stagger > *:nth-child(6)  { animation-delay: 250ms; }
+.anim-stagger > *:nth-child(7)  { animation-delay: 300ms; }
+.anim-stagger > *:nth-child(8)  { animation-delay: 350ms; }
+
+/* --- Card hover (lift effect) --- */
+.card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* --- Button loading state --- */
+.btn[aria-busy="true"] {
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+/* --- Row highlight saat muncul (setelah form submit) --- */
+@keyframes erp-highlight {
+    0%   { background-color: rgba(var(--tblr-primary-rgb), 0.12); }
+    100% { background-color: transparent; }
+}
+.anim-highlight {
+    animation: erp-highlight 1.2s ease;
+}
+
+/* --- Alpine x-transition helpers (override jika perlu) --- */
+[x-cloak] { display: none !important; }

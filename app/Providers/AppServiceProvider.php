@@ -20,10 +20,20 @@ class AppServiceProvider extends ServiceProvider
         // Load semua plugin aktif
         $this->app->make(PluginManager::class)->loadActive();
 
-        // View Composer — dipanggil saat view dirender, bukan saat boot
-        // Jadi semua plugin sudah selesai register menu duluan
         View::composer('layouts.app', function ($view) {
-            $view->with('menuItems', app(MenuManager::class)->all());
+            $allItems = app(MenuManager::class)->all();
+
+            // Cari sidebar items dari modul yang sedang aktif
+            $sidebarItems = [];
+            foreach ($allItems as $module) {
+                if (!empty($module['active']) && request()->is($module['active'])) {
+                    $sidebarItems = $module['children'];
+                    break;
+                }
+            }
+
+            $view->with('menuItems', $allItems);
+            $view->with('sidebarItems', $sidebarItems);
         });
     }
 }

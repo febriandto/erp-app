@@ -59,44 +59,35 @@ class PluginManager
     /**
      * Install plugin dari GitHub
      */
-    public function installFromGithub(string $githubUrl): array
+    /**
+     * Install plugin dari ZIP URL (tidak butuh Git di mesin user)
+     */
+    public function installFromZip(string $githubUrl, string $downloadUrl): array
     {
-        // Parse slug dari URL github
-        // https://github.com/user/erp-plugin-hr → hr
         $slug = $this->parseSlugFromUrl($githubUrl);
 
         if (!$slug) {
             return ['success' => false, 'message' => 'URL GitHub tidak valid.'];
         }
 
-        $targetPath = base_path("plugins/{$slug}");
-
-        // Cek sudah terinstall
-        if (File::exists($targetPath)) {
+        if (Plugin::where('slug', $slug)->exists()) {
             return ['success' => false, 'message' => "Plugin '{$slug}' sudah terinstall."];
         }
 
-        // Git clone
-        $command = "git clone {$githubUrl} {$targetPath} 2>&1";
-        exec($command, $output, $exitCode);
+        $result = $this->downloadAndExtract($slug, $downloadUrl);
 
-        if ($exitCode !== 0) {
-            return [
-                'success' => false,
-                'message' => 'Git clone gagal: ' . implode("\n", $output),
-            ];
+        if (!$result['success']) {
+            return $result;
         }
 
-        // Baca plugin.json
-        $manifest = $this->readManifest($slug);
+        $targetPath = base_path("plugins/{$slug}");
+        $manifest   = $this->readManifest($slug);
 
         if (!$manifest) {
-            // Hapus folder kalau manifest tidak ada
             File::deleteDirectory($targetPath);
-            return ['success' => false, 'message' => 'plugin.json tidak ditemukan.'];
+            return ['success' => false, 'message' => 'plugin.json tidak ditemukan di dalam ZIP.'];
         }
 
-        // Simpan ke database
         Plugin::updateOrCreate(
             ['slug' => $slug],
             [
@@ -111,7 +102,73 @@ class PluginManager
             ]
         );
 
-        return ['success' => true, 'message' => "Plugin '{$manifest['name']}' berhasil diinstall."];
+        return ['success' => true, 'message' => "Plugin '{$manifest['name']}' berhasil diinstall. Silakan activate."];
+    }
+
+    /**
+     * Download ZIP, extract, pindah ke plugins/{slug}/
+     * GitHub ZIP selalu punya nested folder: repo-tagname/
+     */
+    protected function downloadAndExtract(string $slug, string $downloadUrl): array
+    {
+        $targetPath = base_path("plugins/{$slug}");
+
+        try {
+            $client = new \GuzzleHttp\Client(['timeout' => 60, 'verify' => false]);
+            $response = $client->get($downloadUrl, ['allow_redirects' => true]);
+            $zipContent = $response->getBody()->getContents();
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Gagal download ZIP: ' . $e->getMessage()];
+        }
+
+        $tmpZip = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "erp-plugin-{$slug}-" . time() . '.zip';
+        file_put_contents($tmpZip, $zipContent);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tmpZip) !== true) {
+            unlink($tmpZip);
+            return ['success' => false, 'message' => 'File ZIP tidak valid.'];
+        }
+
+        $tmpExtract = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "erp-plugin-{$slug}-" . time();
+        $zip->extractTo($tmpExtract);
+        $zip->close();
+        unlink($tmpZip);
+
+        // GitHub ZIP: isi ada di subfolder repo-tagname/
+        $subfolders = glob($tmpExtract . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR);
+        if (empty($subfolders)) {
+            File::deleteDirectory($tmpExtract);
+            return ['success' => false, 'message' => 'Struktur ZIP tidak dikenali.'];
+        }
+
+        if (File::exists($targetPath)) {
+            File::deleteDirectory($targetPath);
+        }
+
+        File::moveDirectory($subfolders[0], $targetPath);
+        File::deleteDirectory($tmpExtract);
+
+        return ['success' => true];
+    }
+
+    /**
+     * Resolve migration path — cek dua lokasi konvensional
+     */
+    protected function getMigrationPath(string $slug): ?string
+    {
+        $candidates = [
+            base_path("plugins/{$slug}/migrations"),
+            base_path("plugins/{$slug}/database/migrations"),
+        ];
+
+        foreach ($candidates as $path) {
+            if (File::exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -126,10 +183,11 @@ class PluginManager
         }
 
         // Jalankan migrations plugin
-        $migrationPath = base_path("plugins/{$slug}/migrations");
-        if (File::exists($migrationPath)) {
+        $migrationPath = $this->getMigrationPath($slug);
+        if ($migrationPath) {
+            $relativePath = str_replace(base_path() . DIRECTORY_SEPARATOR, '', $migrationPath);
             Artisan::call('migrate', [
-                '--path'  => "plugins/{$slug}/migrations",
+                '--path'  => $relativePath,
                 '--force' => true,
             ]);
         }
@@ -163,38 +221,9 @@ class PluginManager
     }
 
     /**
-     * Update plugin via git pull
+     * Update plugin via ZIP download (tidak butuh Git)
      */
-    public function update(string $slug): array
-    {
-        $pluginPath = base_path("plugins/{$slug}");
-
-        if (!File::exists($pluginPath)) {
-            return ['success' => false, 'message' => 'Plugin tidak terinstall.'];
-        }
-
-        $command = "git -C {$pluginPath} pull 2>&1";
-        exec($command, $output, $exitCode);
-
-        if ($exitCode !== 0) {
-            return ['success' => false, 'message' => 'Git pull gagal: ' . implode("\n", $output)];
-        }
-
-        // Update versi di database
-        $manifest = $this->readManifest($slug);
-        if ($manifest) {
-            Plugin::where('slug', $slug)->update([
-                'version' => $manifest['version'] ?? '1.0.0',
-            ]);
-        }
-
-        return ['success' => true, 'message' => "Plugin '{$slug}' berhasil diupdate."];
-    }
-
-    /**
-     * Uninstall plugin
-     */
-    public function uninstall(string $slug): array
+    public function update(string $slug, string $downloadUrl): array
     {
         $plugin = Plugin::where('slug', $slug)->first();
 
@@ -202,16 +231,81 @@ class PluginManager
             return ['success' => false, 'message' => 'Plugin tidak ditemukan.'];
         }
 
+        $result = $this->downloadAndExtract($slug, $downloadUrl);
+
+        if (!$result['success']) {
+            return $result;
+        }
+
+        $manifest = $this->readManifest($slug);
+        if ($manifest) {
+            Plugin::where('slug', $slug)->update([
+                'version' => $manifest['version'] ?? '1.0.0',
+            ]);
+        }
+
+        $newVersion = $manifest['version'] ?? '?';
+        return ['success' => true, 'message' => "Plugin '{$plugin->name}' berhasil diupdate ke v{$newVersion}."];
+    }
+
+    /**
+     * Uninstall plugin
+     */
+    public function uninstall(string $slug, bool $removeData = false): array
+    {
+        $plugin = Plugin::where('slug', $slug)->first();
+
+        if (!$plugin) {
+            return ['success' => false, 'message' => 'Plugin tidak ditemukan.'];
+        }
+
+        // Rollback migrations kalau removeData = true
+        if ($removeData) {
+            $migrationPath = $this->getMigrationPath($slug);
+            if ($migrationPath) {
+                $migrations = File::files($migrationPath);
+
+                \Schema::disableForeignKeyConstraints();
+
+                foreach (array_reverse($migrations) as $migration) {
+                    $migrationName = pathinfo($migration->getFilename(), PATHINFO_FILENAME);
+
+                    try {
+                        // Panggil down() langsung — urutan drop FK sudah benar
+                        $instance = require $migration->getPathname();
+                        if (method_exists($instance, 'down')) {
+                            $instance->down();
+                        }
+                    } catch (\Exception $e) {
+                        // silent
+                    }
+
+                    \DB::table('migrations')
+                        ->where('migration', $migrationName)
+                        ->delete();
+                }
+
+                \Schema::enableForeignKeyConstraints();
+            }
+        }
+
         // Hapus folder
         $pluginPath = base_path("plugins/{$slug}");
         if (File::exists($pluginPath)) {
-            File::deleteDirectory($pluginPath);
+            if (PHP_OS_FAMILY === 'Windows') {
+                exec("rd /s /q \"{$pluginPath}\"");
+            } else {
+                exec("rm -rf {$pluginPath}");
+            }
         }
 
-        // Hapus dari database
         $plugin->delete();
 
-        return ['success' => true, 'message' => "Plugin '{$plugin->name}' berhasil diuninstall."];
+        $message = $removeData
+            ? "Plugin '{$plugin->name}' diuninstall dan semua data dihapus."
+            : "Plugin '{$plugin->name}' diuninstall. Data tetap tersimpan.";
+
+        return ['success' => true, 'message' => $message];
     }
 
     /**
@@ -239,6 +333,13 @@ class PluginManager
         return $matches[1] ?? null;
     }
 
+    protected function gitBin(): string
+    {
+        return PHP_OS_FAMILY === 'Windows'
+            ? 'C:\\Program Files\\Git\\cmd\\git.exe'
+            : 'git';
+    }
+
     protected function tableExists(): bool
     {
         try {
@@ -246,5 +347,32 @@ class PluginManager
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    public function fetchRegistry(): array
+    {
+        $registryUrl = config('plugins.registry_url',
+            'https://raw.githubusercontent.com/febriandto/erp-plugin-registry/main/registry.json'
+        );
+
+        try {
+            $client   = new \GuzzleHttp\Client([
+                'timeout'         => 5,
+                'verify'          => false, // bypass SSL issue di local
+            ]);
+            $response = $client->get($registryUrl);
+            $data     = json_decode($response->getBody(), true);
+            return $data['plugins'] ?? [];
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Cek apakah plugin sudah terinstall
+     */
+    public function isInstalled(string $slug): bool
+    {
+        return Plugin::where('slug', $slug)->exists();
     }
 }
