@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Plugin;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -78,6 +79,25 @@ class PluginMakeCommand extends Command
             $short = str_replace(base_path() . DIRECTORY_SEPARATOR, '', $path);
             $this->line("  <fg=green>✓</> {$short}");
         }
+
+        // Register ke DB supaya muncul di Plugin Manager
+        $this->components->task('Register plugin ke database', function () use ($slug, $displayName, $description, $author, $targetPath) {
+            if (!\Schema::hasTable('plugins')) return false;
+
+            Plugin::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name'           => $displayName,
+                    'version'        => '1.0.0',
+                    'description'    => $description,
+                    'author'         => $author,
+                    'installed_path' => $targetPath,
+                    'is_active'      => false,
+                    'installed_at'   => now(),
+                ]
+            );
+            return true;
+        });
 
         $this->newLine();
         $this->components->success("Plugin <fg=cyan>{$displayName}</> scaffolded!");
