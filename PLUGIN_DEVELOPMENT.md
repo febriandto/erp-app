@@ -1,87 +1,159 @@
 # Panduan Membuat Plugin ERP
 
-Panduan lengkap dari setup awal sampai rilis plugin ke marketplace.
+Panduan lengkap dari scaffold awal sampai rilis plugin ke marketplace.
 
 ---
 
 ## Daftar Isi
 
 1. [Konsep Dasar](#1-konsep-dasar)
-2. [Setup Repository](#2-setup-repository)
-3. [Struktur Plugin](#3-struktur-plugin)
-4. [Membuat Plugin](#4-membuat-plugin)
-5. [Mendaftarkan ke Marketplace](#5-mendaftarkan-ke-marketplace)
-6. [Setup GitHub Actions](#6-setup-github-actions)
-7. [Rilis Plugin](#7-rilis-plugin)
-8. [Referensi Cepat](#8-referensi-cepat)
+2. [Quick Start — plugin:make](#2-quick-start--pluginmake)
+3. [Setup Repository](#3-setup-repository)
+4. [Struktur Plugin](#4-struktur-plugin)
+5. [Anatomy Plugin (Manual)](#5-anatomy-plugin-manual)
+6. [RBAC — Permission & Menu Visibility](#6-rbac--permission--menu-visibility)
+7. [Sidebar Menu — Collapsible Sub-menu](#7-sidebar-menu--collapsible-sub-menu)
+8. [Mendaftarkan ke Marketplace](#8-mendaftarkan-ke-marketplace)
+9. [Setup GitHub Actions](#9-setup-github-actions)
+10. [Rilis Plugin](#10-rilis-plugin)
+11. [Referensi Cepat](#11-referensi-cepat)
 
 ---
 
 ## 1. Konsep Dasar
 
-Plugin adalah modul independen yang extend fungsionalitas ERP tanpa menyentuh core app. Setiap plugin adalah **repo GitHub tersendiri** yang di-install user via Plugin Manager.
+Plugin adalah modul independen yang extend fungsionalitas ERP tanpa menyentuh core app. Setiap plugin adalah **ServiceProvider Laravel** yang di-load saat boot.
 
 **Alur hidup plugin:**
 ```
-Buat repo GitHub → Coding plugin → Push → Daftar ke registry
-    → User install via Plugin Manager (download ZIP otomatis)
-    → Buat release baru → GitHub Actions update registry → User klik Update
+Scaffold dengan plugin:make → Coding → composer dump-autoload
+    → Activate via Plugin Manager → Migration otomatis jalan
+    → Plugin aktif: routes, views, menu terdaftar
 ```
 
-**Konvensi nama repo:** `erp-plugin-{slug}` — contoh: `erp-plugin-hr`, `erp-plugin-crm`
+**Dua tipe plugin:**
+
+| Tipe | Keterangan |
+|---|---|
+| **Core** | Bawaan sistem (`is_core = true`), tidak bisa uninstall. Contoh: `users`, `masterdata` |
+| **Optional** | Bisa install/uninstall user lewat Plugin Manager. Contoh: `accounting`, `inventory` |
+
+**Master data khusus** tetap di plugin pemiliknya — jangan gabungkan ke `masterdata` kecuali dipakai oleh 2+ plugin berbeda.
 
 ---
 
-## 2. Setup Repository
+## 2. Quick Start — plugin:make
 
-### 2a. Buat repo di GitHub
-
-Buat repo baru dengan nama `erp-plugin-{slug}` (public).
-
-### 2b. Clone dan init struktur
+Cara tercepat scaffold plugin baru:
 
 ```bash
-git clone https://github.com/{username}/erp-plugin-{slug}.git
-cd erp-plugin-{slug}
+C:\sdk\php85\php.exe artisan plugin:make {slug}
+
+# Contoh:
+C:\sdk\php85\php.exe artisan plugin:make sales-order
+C:\sdk\php85\php.exe artisan plugin:make hr
+C:\sdk\php85\php.exe artisan plugin:make crm
 ```
 
-### 2c. Tambahkan plugin ke erp-app untuk development
+Command akan tanya:
+- Display name (default: prettified slug)
+- Description
+- Author
+- Tabler icon (contoh: `ti ti-shopping-cart`)
+- Menu order (angka urutan di top navbar)
+
+Lalu generate **9 file sekaligus**:
+
+```
+plugins/{slug}/
+├── plugin.json                          ← manifest + permissions
+├── Plugin.php                           ← ServiceProvider + menu
+├── routes.php                           ← CRUD routes + can: middleware
+├── Controllers/{Name}Controller.php     ← CRUD controller siap pakai
+├── Models/{Name}.php                    ← Eloquent model
+├── migrations/{ts}_create_{table}.php   ← migration dengan up() & down()
+└── resources/views/
+    ├── index.blade.php                  ← table + dropdown actions
+    ├── create.blade.php                 ← form + Alpine loading state
+    └── edit.blade.php                   ← form + Alpine loading state
+```
+
+**Setelah plugin:make, jalankan:**
+
+```bash
+composer85 dump-autoload
+```
+
+Lalu activate plugin via Plugin Manager di browser — migration otomatis jalan saat activate.
+
+### Slug dengan hyphen
+
+Slug `sales-order` otomatis dikonversi ke namespace `SalesOrder` (PascalCase). Folder tetap `plugins/sales-order/`.
+
+```
+sales-order  →  folder: plugins/sales-order/
+             →  namespace: Plugins\SalesOrder
+             →  route prefix: sales-order
+             →  view namespace: sales-order::
+```
+
+---
+
+## 3. Setup Repository
+
+Untuk plugin yang akan di-publish ke marketplace, buat repo GitHub terpisah:
+
+### 3a. Buat repo di GitHub
+
+Nama repo: `erp-plugin-{slug}` — contoh: `erp-plugin-hr`, `erp-plugin-crm`
+
+### 3b. Tambahkan sebagai submodule di erp-app
 
 ```bash
 # Di root erp-app
 git submodule add https://github.com/{username}/erp-plugin-{slug}.git plugins/{slug}
-composer dump-autoload
+composer85 dump-autoload
+```
+
+### 3c. Develop di dalam submodule
+
+```bash
+cd plugins/{slug}
+# edit files...
+git add . && git commit -m "feat: ..." && git push
+
+# Update pointer di repo utama
+cd ../..
+git add plugins/{slug}
+git commit -m "update {slug} plugin"
+git push
 ```
 
 ---
 
-## 3. Struktur Plugin
+## 4. Struktur Plugin
 
 ```
 plugins/{slug}/
-├── plugin.json                    # Manifest (wajib)
-├── Plugin.php                     # Entry point (wajib)
-├── routes.php                     # Definisi routes
+├── plugin.json                 # Manifest (wajib)
+├── Plugin.php                  # Entry point ServiceProvider (wajib)
+├── routes.php                  # Definisi routes
 ├── Controllers/
 │   └── {Name}Controller.php
 ├── Models/
 │   └── {Name}.php
-├── database/
-│   └── migrations/
-│       └── 2024_01_01_000001_create_{table}_table.php
+├── migrations/                 # Atau database/migrations/ — pilih salah satu, konsisten
+│   └── YYYY_MM_DD_HHMMSS_create_{table}_table.php
 └── resources/
     └── views/
-        └── {feature}/
-            ├── index.blade.php
-            ├── create.blade.php
-            └── show.blade.php
+        └── index.blade.php
 ```
 
 ---
 
-## 4. Membuat Plugin
+## 5. Anatomy Plugin (Manual)
 
-### 4a. plugin.json
+### 5a. plugin.json
 
 ```json
 {
@@ -90,19 +162,24 @@ plugins/{slug}/
     "version": "1.0.0",
     "description": "Manajemen karyawan, absensi, dan penggajian",
     "author": "username",
-    "depends": []
+    "depends": [],
+    "permissions": [
+        {"name": "hr.view",   "label": "View HR"},
+        {"name": "hr.manage", "label": "Manage HR"}
+    ]
 }
 ```
 
 | Field | Keterangan |
 |---|---|
-| `slug` | Harus unik, huruf kecil, tanpa spasi. Dipakai sebagai namespace dan URL prefix |
-| `version` | Ikuti semver: `MAJOR.MINOR.PATCH` |
-| `depends` | Slug plugin lain yang harus terinstall duluan |
+| `slug` | Unik, lowercase. Dipakai sebagai namespace dan URL prefix |
+| `version` | Semver: `MAJOR.MINOR.PATCH` |
+| `depends` | Slug plugin lain yang harus aktif duluan |
+| `permissions` | Permission yang di-seed otomatis saat plugin diaktifkan |
 
 ---
 
-### 4b. Plugin.php (Entry Point)
+### 5b. Plugin.php (Entry Point)
 
 ```php
 <?php
@@ -117,59 +194,66 @@ class Plugin extends ServiceProvider
 {
     public function boot(): void
     {
-        // Views — namespace: 'hr'
+        // Guard wajib — cegah route() dipanggil saat artisan console
+        if (app()->runningInConsole()) return;
+
         $this->loadViewsFrom(__DIR__ . '/resources/views', 'hr');
+        $this->loadMigrationsFrom(__DIR__ . '/migrations');
 
-        // Migrations — cek dua lokasi yang didukung:
-        // Option A: plugins/hr/migrations/
-        // Option B: plugins/hr/database/migrations/
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        // WAJIB ['web', 'auth'] — bukan hanya 'web', agar session & $errors tersedia
+        Route::middleware(['web', 'auth'])->group(__DIR__ . '/routes.php');
 
-        // Routes — WAJIB pakai middleware('web'), bukan loadRoutesFrom()
-        Route::middleware('web')->group(__DIR__ . '/routes.php');
-
-        // Daftarkan di menu — muncul di top navbar dan sidebar
-        $this->app->make(MenuManager::class)->add([
-            'title'  => 'HR',
-            'url'    => route('hr.employees.index'),
-            'icon'   => 'ti ti-users',        // dari tabler.io/icons
-            'order'  => 30,                   // urutan di top navbar
-            'active' => 'hr*',                // pattern URL aktif
-            'children' => [
-                // Sub-menu muncul di sidebar saat modul HR aktif
-                ['title' => 'Employees', 'url' => route('hr.employees.index'), 'icon' => 'ti ti-user', 'active' => 'hr/employees*'],
-                ['title' => 'Attendance', 'url' => route('hr.attendance.index'), 'icon' => 'ti ti-calendar', 'active' => 'hr/attendance*'],
-            ],
-        ]);
+        // Menu WAJIB dibungkus app->booted() — route() baru tersedia setelah semua provider selesai boot
+        $this->app->booted(function () {
+            app()->make(MenuManager::class)->add([
+                'title'      => 'HR',
+                'url'        => route('hr.employees.index'),
+                'icon'       => 'ti ti-users',
+                'order'      => 30,
+                'active'     => 'hr*',
+                'permission' => 'hr.view',        // null = tampil untuk semua user login
+                'children'   => [
+                    // Lihat Seksi 7 untuk format collapsible sub-menu
+                ],
+            ]);
+        });
     }
 }
 ```
 
-**Aturan penting:**
-- Namespace: `Plugins\{slug}` — bukan `App\Modules\...`
-- `loadMigrationsFrom` hanya register path, **tidak** otomatis jalankan migration
-- Migration dijalankan saat user klik **Activate** di Plugin Manager
+**Aturan kritis:**
+- `if (app()->runningInConsole()) return;` — wajib, atau `composer dump-autoload` crash
+- `Route::middleware(['web', 'auth'])` — wajib dua-duanya, bukan hanya `'web'`
+- `app()->booted(function () { ... })` — wajib untuk menu, atau `route()` belum tersedia di Laravel 12
 
 ---
 
-### 4c. routes.php
+### 5c. routes.php
+
+Static route HARUS didaftarkan sebelum dynamic route — cegah `create` tercocok sebagai `{id}`:
 
 ```php
 <?php
 
 use Illuminate\Support\Facades\Route;
 use Plugins\hr\Controllers\EmployeeController;
-use Plugins\hr\Controllers\AttendanceController;
 
 Route::prefix('hr')->name('hr.')->group(function () {
-    Route::resource('employees', EmployeeController::class);
-    Route::resource('attendance', AttendanceController::class);
+    // Static dulu
+    Route::get('employees',              [EmployeeController::class, 'index'])->name('employees.index')->middleware('can:hr.view');
+    Route::get('employees/create',       [EmployeeController::class, 'create'])->name('employees.create')->middleware('can:hr.manage');
+    Route::post('employees',             [EmployeeController::class, 'store'])->name('employees.store')->middleware('can:hr.manage');
+    // Dynamic belakangan
+    Route::get('employees/{employee}',      [EmployeeController::class, 'show'])->name('employees.show')->middleware('can:hr.view');
+    Route::get('employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit')->middleware('can:hr.manage');
+    Route::put('employees/{employee}',      [EmployeeController::class, 'update'])->name('employees.update')->middleware('can:hr.manage');
+    Route::delete('employees/{employee}',   [EmployeeController::class, 'destroy'])->name('employees.destroy')->middleware('can:hr.manage');
 });
 ```
 
 ---
 
-### 4d. Controller
+### 5d. Controller
 
 ```php
 <?php
@@ -206,7 +290,7 @@ class EmployeeController extends Controller
 
 ---
 
-### 4e. Model
+### 5e. Model
 
 ```php
 <?php
@@ -223,7 +307,7 @@ class Employee extends Model
 
 ---
 
-### 4f. Migration
+### 5f. Migration
 
 ```php
 <?php
@@ -253,9 +337,8 @@ return new class extends Migration {
 };
 ```
 
-**Catatan:** Method `down()` wajib ada dan benar — dipakai saat user uninstall dengan opsi "Hapus Data".
+`down()` wajib ada dan benar — dipakai saat user uninstall dengan opsi "Hapus Data". Jika ada FK, drop child table dulu:
 
-Jika ada foreign key antar tabel, drop dalam urutan terbalik:
 ```php
 public function down(): void
 {
@@ -266,19 +349,20 @@ public function down(): void
 
 ---
 
-### 4g. View (Blade)
+### 5g. View (Blade)
 
 ```blade
-{{-- plugins/hr/resources/views/employees/index.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Employees')
 @section('page-title', 'Employees')
 
 @section('page-actions')
-    <a href="{{ route('hr.employees.create') }}" class="btn btn-primary">
-        <i class="ti ti-plus me-1"></i>Add Employee
-    </a>
+@can('hr.manage')
+<a href="{{ route('hr.employees.create') }}" class="btn btn-primary">
+    <i class="ti ti-plus me-1"></i>Add Employee
+</a>
+@endcan
 @endsection
 
 @section('content')
@@ -286,11 +370,7 @@ public function down(): void
     <div class="table-responsive">
         <table class="table table-vcenter card-table">
             <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Position</th>
-                    <th class="w-1"></th>
-                </tr>
+                <tr><th>Name</th><th>Position</th><th class="w-1"></th></tr>
             </thead>
             <tbody class="anim-stagger">
                 @forelse($employees as $employee)
@@ -298,22 +378,29 @@ public function down(): void
                     <td>{{ $employee->name }}</td>
                     <td>{{ $employee->position }}</td>
                     <td>
-                        <form action="{{ route('hr.employees.destroy', $employee) }}" method="POST"
-                              x-data="{ loading: false }" @submit="loading = true">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <span x-show="!loading">Delete</span>
-                                <span x-show="loading" x-cloak>
-                                    <span class="spinner-border spinner-border-sm"></span>
-                                </span>
+                        @can('hr.manage')
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="ti ti-dots-vertical"></i>
                             </button>
-                        </form>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a href="{{ route('hr.employees.edit', $employee) }}" class="dropdown-item">
+                                    <i class="ti ti-edit me-2"></i>Edit
+                                </a>
+                                <form action="{{ route('hr.employees.destroy', $employee) }}" method="POST"
+                                      onsubmit="return confirm('Hapus?')">
+                                    @csrf @method('DELETE')
+                                    <button class="dropdown-item text-danger">
+                                        <i class="ti ti-trash me-2"></i>Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        @endcan
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="3" class="text-center text-muted py-4">Belum ada data.</td>
-                </tr>
+                <tr><td colspan="3" class="text-center text-muted py-4">Belum ada data.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -322,23 +409,127 @@ public function down(): void
 @endsection
 ```
 
-Lihat [CLAUDE.md](CLAUDE.md) untuk standar UI component dan micro animation.
+Lihat [CLAUDE.md](CLAUDE.md) untuk standar UI component dan micro animation lengkap.
 
 ---
 
-## 5. Mendaftarkan ke Marketplace
+## 6. RBAC — Permission & Menu Visibility
 
-Registry ini **internal** — hanya developer yang sudah diizinkan oleh maintainer yang bisa publish plugin. Ini untuk menjaga keamanan dan kualitas plugin yang tersedia di ERP.
+ERP ini menggunakan **2-layer RBAC** (WordPress/Odoo style):
 
-Plugin otomatis muncul di marketplace saat kamu buat GitHub Release pertama — tidak perlu daftar manual, asalkan workflow dan `REGISTRY_TOKEN` sudah terpasang.
+| Layer | Mekanisme | Efek |
+|---|---|---|
+| **Route** | `->middleware('can:hr.view')` | 403 jika akses tanpa permission |
+| **Menu** | `'permission' => 'hr.view'` di MenuManager | Menu disembunyikan di navbar/sidebar |
+
+**Role `admin` otomatis bypass semua permission** via `Gate::before()` di AppServiceProvider.
+
+### Mendaftarkan permission di plugin.json
+
+```json
+"permissions": [
+    {"name": "hr.view",   "label": "View HR"},
+    {"name": "hr.manage", "label": "Manage HR"}
+]
+```
+
+Permission di-seed otomatis saat plugin diaktifkan. Admin mendapat semua permission saat `AdminSeeder` dijalankan.
+
+### Menggunakan permission di view
+
+```blade
+@can('hr.manage')
+    <a href="{{ route('hr.employees.create') }}" class="btn btn-primary">Add</a>
+@endcan
+```
+
+### Konvensi penamaan permission
+
+```
+{slug}.view    — baca/lihat data
+{slug}.manage  — create, edit, delete
+{slug}.export  — export data (opsional)
+{slug}.approve — approve workflow (opsional)
+```
+
+---
+
+## 7. Sidebar Menu — Collapsible Sub-menu
+
+Sidebar mendukung **3 level** hierarki:
+
+```
+Top Navbar  →  Modul (Accounting, HR, dll)
+Sidebar L1  →  Section (collapsible, punya icon + chevron)
+Sidebar L2  →  Sub-item (indent, tanpa icon, bg-highlight saat active)
+```
+
+### Contoh struktur menu 3 level
+
+```php
+$this->app->booted(function () {
+    app()->make(MenuManager::class)->add([
+        // Level 1 — Top Navbar
+        'title'      => 'HR',
+        'url'        => route('hr.employees.index'),
+        'icon'       => 'ti ti-users',
+        'order'      => 30,
+        'active'     => 'hr*',
+        'permission' => 'hr.view',
+        'children'   => [
+
+            // Level 2 — Sidebar section (collapsible)
+            [
+                'title'      => 'Employees',
+                'icon'       => 'ti ti-user',
+                'active'     => 'hr/employees*',
+                'permission' => 'hr.view',
+                'children'   => [
+
+                    // Level 3 — Sub-item (link langsung)
+                    ['title' => 'All Employees', 'url' => route('hr.employees.index'),  'active' => 'hr/employees'],
+                    ['title' => 'Add Employee',  'url' => route('hr.employees.create'), 'active' => 'hr/employees/create', 'permission' => 'hr.manage'],
+
+                ],
+            ],
+
+            [
+                'title'      => 'Attendance',
+                'icon'       => 'ti ti-calendar',
+                'active'     => 'hr/attendance*',
+                'permission' => 'hr.view',
+                'children'   => [
+                    ['title' => 'All Records', 'url' => route('hr.attendance.index'), 'active' => 'hr/attendance'],
+                    ['title' => 'Add Record',  'url' => route('hr.attendance.create'), 'active' => 'hr/attendance/create', 'permission' => 'hr.manage'],
+                ],
+            ],
+
+        ],
+    ]);
+});
+```
+
+**Aturan:**
+- Section tanpa `children` → flat link biasa di sidebar
+- Section dengan `children` → collapsible accordion, expand otomatis jika URL aktif
+- Sub-item tidak perlu `icon` — hirarki dibedakan dari indentasi dan warna saja
+- `permission` di level 2 (section) menyembunyikan seluruh section beserta sub-item-nya
+
+---
+
+## 8. Mendaftarkan ke Marketplace
+
+Registry ini **internal** — hanya developer yang sudah diizinkan maintainer yang bisa publish plugin.
+
+Plugin otomatis muncul di marketplace saat buat GitHub Release pertama — tidak perlu daftar manual, asalkan workflow dan `REGISTRY_TOKEN` sudah terpasang.
 
 Untuk bergabung sebagai plugin developer: hubungi maintainer ERP untuk mendapatkan `REGISTRY_TOKEN`.
 
 ---
 
-## 6. Setup GitHub Actions
+## 9. Setup GitHub Actions
 
-### 6a. Buat workflow di repo plugin
+### Buat workflow di repo plugin
 
 Buat file `.github/workflows/publish.yml`:
 
@@ -368,9 +559,7 @@ jobs:
             }"
 ```
 
-Setelah release dibuat, workflow ini otomatis kirim sinyal ke registry. Registry akan fetch `plugin.json` dari repo kamu dan menambahkan/update entry di marketplace.
-
-### 6b. Tambah REGISTRY_TOKEN secret
+### Tambah REGISTRY_TOKEN secret
 
 Minta `REGISTRY_TOKEN` ke maintainer ERP, lalu tambahkan di repo plugin:
 
@@ -379,92 +568,101 @@ Minta `REGISTRY_TOKEN` ke maintainer ERP, lalu tambahkan di repo plugin:
 - Name: `REGISTRY_TOKEN`
 - Value: *(token dari maintainer)*
 
-Cukup dilakukan sekali per repo.
-
-> **Untuk maintainer:** Token ini adalah fine-grained PAT dengan permission **"Actions: write"** hanya pada repo `erp-plugin-registry`. Share via jalur internal (Slack/WhatsApp tim). Token tidak bisa baca/tulis kode — hanya bisa trigger workflow registry.
+> **Untuk maintainer:** Token ini adalah fine-grained PAT dengan permission **"Actions: write"** hanya pada repo `erp-plugin-registry`. Jangan embed di file yang dipush ke public repo — GitHub Secret Scanning akan otomatis revoke.
 
 ---
 
-## 7. Rilis Plugin
+## 10. Rilis Plugin
 
 ### Rilis pertama (v1.0.0)
 
 ```bash
-# Pastikan plugin.json sudah versi 1.0.0
 git add .
 git commit -m "feat: initial release"
 git push
 ```
 
 Buat GitHub Release:
-1. Buka repo plugin di GitHub
-2. **Releases → Create a new release**
-3. Tag: `v1.0.0` → Target: `main`
-4. Title: `v1.0.0`
-5. Klik **Publish release**
-
-GitHub Actions otomatis update `registry.json` dengan `download_url`. User bisa install dari Plugin Manager.
-
----
+1. Buka repo plugin di GitHub → **Releases → Create a new release**
+2. Tag: `v1.0.0` | Target: `main`
+3. Klik **Publish release** — GitHub Actions otomatis update registry
 
 ### Rilis update (v1.0.1, v1.1.0, dst)
 
 ```bash
 # 1. Update versi di plugin.json
-# "version": "1.0.1"
-
-# 2. Commit dan push perubahan
-git add .
-git commit -m "feat: tambah fitur X"
-git push
-
+# 2. Commit dan push
+git add . && git commit -m "feat: tambah fitur X" && git push
 # 3. Buat GitHub Release dengan tag versi baru
-#    → Actions otomatis update registry
-#    → User yang sudah install melihat badge "Update Available"
-#    → User klik Update → ZIP baru di-download otomatis
+#    → Actions update registry → user klik Update di Plugin Manager
 ```
 
-**Aturan versioning:**
-| Jenis perubahan | Contoh | Bump |
-|---|---|---|
-| Bug fix, typo | Fix kalkulasi total | `1.0.0` → `1.0.1` |
-| Fitur baru, backward-compatible | Tambah halaman Reports | `1.0.0` → `1.1.0` |
-| Breaking change, restrukturisasi besar | Ubah struktur tabel utama | `1.0.0` → `2.0.0` |
+**Versioning:**
+
+| Jenis perubahan | Bump |
+|---|---|
+| Bug fix, typo | `1.0.0` → `1.0.1` |
+| Fitur baru, backward-compatible | `1.0.0` → `1.1.0` |
+| Breaking change, ubah struktur tabel | `1.0.0` → `2.0.0` |
 
 ---
 
-## 8. Referensi Cepat
+## 11. Referensi Cepat
 
 ### Checklist plugin baru
 
-- [ ] Buat repo `erp-plugin-{slug}` di GitHub (public)
-- [ ] Buat `plugin.json` dengan slug unik
-- [ ] Buat `Plugin.php` dengan namespace `Plugins\{slug}`
-- [ ] Routes pakai `Route::middleware('web')->group(...)`
-- [ ] Migration punya method `down()` yang benar
-- [ ] Menu terdaftar via `MenuManager::add()` dengan `children`
-- [ ] Minta `REGISTRY_TOKEN` ke maintainer ERP
-- [ ] Setup `.github/workflows/publish.yml` di repo plugin
-- [ ] Tambah `REGISTRY_TOKEN` sebagai secret di repo plugin
+- [ ] Jalankan `plugin:make {slug}` untuk scaffold boilerplate
+- [ ] Sesuaikan `plugin.json` — tambah `depends` jika butuh plugin lain
+- [ ] Tambah permission di `plugin.json` sesuai kebutuhan
+- [ ] Tambah kolom di migration sesuai kebutuhan domain
+- [ ] Tambah field di `$fillable` model
+- [ ] Update validation di controller (store & update)
+- [ ] Tambah kolom di view (index, create, edit)
+- [ ] Konfigurasi menu 3-level di `Plugin.php` (`children` dengan `children`)
+- [ ] Jalankan `composer85 dump-autoload`
+- [ ] Activate via Plugin Manager — cek migration jalan
+- [ ] Test akses dengan role yang punya permission dan yang tidak
+
+### Checklist sebelum publish ke marketplace
+
+- [ ] Buat repo `erp-plugin-{slug}` di GitHub
+- [ ] Setup `.github/workflows/publish.yml`
+- [ ] Tambah `REGISTRY_TOKEN` secret ke repo
+- [ ] Versi di `plugin.json` sudah benar
+- [ ] `down()` di migration sudah benar
 - [ ] Buat GitHub Release → test install dari Plugin Manager
 
 ### Namespace cheatsheet
 
 ```php
-// Entry point
+// Slug tanpa hyphen (hr, accounting, inventory)
 namespace Plugins\hr;
-
-// Controller
 namespace Plugins\hr\Controllers;
-
-// Model
 namespace Plugins\hr\Models;
 
-// View (di controller)
-return view('hr::employees.index');
+// Slug dengan hyphen (sales-order → SalesOrder)
+namespace Plugins\SalesOrder;
+namespace Plugins\SalesOrder\Controllers;
+namespace Plugins\SalesOrder\Models;
 
-// Route name
-route('hr.employees.index')
+// View (di controller) — selalu pakai slug as-is
+return view('hr::employees.index');
+return view('sales-order::orders.index');
+
+// Route name — selalu pakai slug as-is
+route('hr.employees.index');
+route('sales-order.index');
+```
+
+### Artisan commands
+
+```bash
+C:\sdk\php85\php.exe artisan plugin:make {slug}    # scaffold plugin baru
+C:\sdk\php85\php.exe artisan plugin:list            # list semua plugin
+C:\sdk\php85\php.exe artisan plugin:activate {slug}
+C:\sdk\php85\php.exe artisan plugin:deactivate {slug}
+C:\sdk\php85\php.exe artisan migrate               # jalankan migration
+composer85 dump-autoload                            # update autoloader
 ```
 
 ### Icon
@@ -473,6 +671,7 @@ Gunakan Tabler Icons: https://tabler.io/icons — format: `ti ti-{name}`
 
 ```html
 <i class="ti ti-users"></i>
-<i class="ti ti-calendar"></i>
+<i class="ti ti-shopping-cart"></i>
 <i class="ti ti-chart-bar"></i>
+<i class="ti ti-file-invoice"></i>
 ```
