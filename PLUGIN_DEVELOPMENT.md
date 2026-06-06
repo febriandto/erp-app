@@ -328,7 +328,11 @@ Lihat [CLAUDE.md](CLAUDE.md) untuk standar UI component dan micro animation.
 
 ## 5. Mendaftarkan ke Marketplace
 
-**Tidak perlu daftar manual.** Plugin otomatis muncul di marketplace saat kamu buat GitHub Release pertama kali — selama `plugin.json` sudah ada dan workflow sudah terpasang.
+Registry ini **internal** — hanya developer yang sudah diizinkan oleh maintainer yang bisa publish plugin. Ini untuk menjaga keamanan dan kualitas plugin yang tersedia di ERP.
+
+Plugin otomatis muncul di marketplace saat kamu buat GitHub Release pertama — tidak perlu daftar manual, asalkan workflow dan `REGISTRY_TOKEN` sudah terpasang.
+
+Untuk bergabung sebagai plugin developer: hubungi maintainer ERP untuk mendapatkan `REGISTRY_TOKEN`.
 
 ---
 
@@ -364,18 +368,20 @@ jobs:
             }"
 ```
 
-Satu step — kirim sinyal ke registry. Registry yang akan fetch `plugin.json` dan update dirinya sendiri.
+Setelah release dibuat, workflow ini otomatis kirim sinyal ke registry. Registry akan fetch `plugin.json` dari repo kamu dan menambahkan/update entry di marketplace.
 
 ### 6b. Tambah REGISTRY_TOKEN secret
 
-`REGISTRY_TOKEN` adalah token yang disediakan oleh pemilik registry. Dapatkan dari dokumentasi atau hubungi maintainer ERP.
+Minta `REGISTRY_TOKEN` ke maintainer ERP, lalu tambahkan di repo plugin:
 
-Di repo plugin: **Settings → Secrets and variables → Actions → New repository secret**
+**Settings → Secrets and variables → Actions → New repository secret**
 
 - Name: `REGISTRY_TOKEN`
-- Value: *(token yang didapat dari maintainer)*
+- Value: *(token dari maintainer)*
 
-> **Untuk maintainer registry:** Buat fine-grained PAT di GitHub dengan permission **"Actions: write"** hanya pada repo `erp-plugin-registry`. Share token ini ke developer plugin. Token ini hanya bisa trigger workflow, tidak bisa baca/tulis kode.
+Cukup dilakukan sekali per repo.
+
+> **Untuk maintainer:** Token ini adalah fine-grained PAT dengan permission **"Actions: write"** hanya pada repo `erp-plugin-registry`. Share via jalur internal (Slack/WhatsApp tim). Token tidak bisa baca/tulis kode — hanya bisa trigger workflow registry.
 
 ---
 
@@ -437,8 +443,9 @@ git push
 - [ ] Routes pakai `Route::middleware('web')->group(...)`
 - [ ] Migration punya method `down()` yang benar
 - [ ] Menu terdaftar via `MenuManager::add()` dengan `children`
-- [ ] Setup `.github/workflows/publish.yml` (dispatch ke registry)
-- [ ] Tambah `REGISTRY_TOKEN` secret di repo plugin
+- [ ] Minta `REGISTRY_TOKEN` ke maintainer ERP
+- [ ] Setup `.github/workflows/publish.yml` di repo plugin
+- [ ] Tambah `REGISTRY_TOKEN` sebagai secret di repo plugin
 - [ ] Buat GitHub Release → test install dari Plugin Manager
 
 ### Namespace cheatsheet
