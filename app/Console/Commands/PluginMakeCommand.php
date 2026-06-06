@@ -373,6 +373,8 @@ BLADE;
         $action   = $isEdit ? "route('{$slug}.update', \$record)" : "route('{$slug}.store')";
         $method   = $isEdit ? '@csrf @method(\'PUT\')' : '@csrf';
         $btnLabel = $isEdit ? 'Update' : 'Simpan';
+        // Pre-compute old() call to avoid PHP heredoc interpolating ternary expressions
+        $oldValue = $isEdit ? "old('name', \$record->name)" : "old('name')";
 
         return <<<BLADE
 @extends('layouts.app')
@@ -394,7 +396,7 @@ BLADE;
                     <div class="mb-3">
                         <label class="form-label required">Name</label>
                         <input type="text" name="name"
-                               value="{{ old('name'" . ($isEdit ? ", \$record->name" : "") . ") }}"
+                               value="{{ {$oldValue} }}"
                                class="form-control @error('name') is-invalid @enderror"
                                required>
                         @error('name')<div class="invalid-feedback">{{ \$message }}</div>@enderror
