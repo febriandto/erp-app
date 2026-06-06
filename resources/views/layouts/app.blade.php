@@ -69,7 +69,7 @@
                         </li>
                         @endforeach
                     </ul>
-                    <div class="ms-auto">
+                    <div class="ms-auto d-flex align-items-center gap-2">
                         <ul class="navbar-nav">
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->is('admin/plugins*') ? 'active' : '' }}"
@@ -81,6 +81,40 @@
                                 </a>
                             </li>
                         </ul>
+
+                        {{-- User dropdown --}}
+                        <div class="nav-item dropdown">
+                            <a href="#" class="nav-link d-flex align-items-center gap-2 px-2"
+                               data-bs-toggle="dropdown">
+                                <span class="avatar avatar-sm"
+                                      style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=206bc4&color=fff)">
+                                </span>
+                                <span class="d-none d-md-inline text-body-secondary small">
+                                    {{ auth()->user()->name }}
+                                </span>
+                                <i class="ti ti-chevron-down text-muted" style="font-size:.75rem"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <div class="dropdown-header">
+                                    <div class="fw-medium">{{ auth()->user()->name }}</div>
+                                    <div class="text-muted small">{{ auth()->user()->email }}</div>
+                                    @if(auth()->user()->roles->isNotEmpty())
+                                    <div class="mt-1">
+                                        @foreach(auth()->user()->roles as $role)
+                                        <span class="badge bg-blue-lt">{{ $role->name }}</span>
+                                        @endforeach
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="ti ti-logout me-2"></i>Keluar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
