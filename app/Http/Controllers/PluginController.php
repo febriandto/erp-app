@@ -44,10 +44,13 @@ class PluginController extends Controller
     public function activate(Plugin $plugin)
     {
         $result = $this->manager->activate($plugin->slug);
-        return back()->with(
-            $result['success'] ? 'success' : 'error',
-            $result['message']
-        );
+
+        if (!$result['success']) {
+            return back()->with('error', $result['message']);
+        }
+
+        // Full redirect agar plugin boot normal di request berikutnya
+        return redirect()->route('plugins.index')->with('success', $result['message']);
     }
 
     public function deactivate(Plugin $plugin)

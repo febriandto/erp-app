@@ -208,16 +208,15 @@ class PluginManager
             }
         }
 
-        // Load plugin sekarang juga
-        $loaded = $this->loadPlugin($slug);
-
-        if (!$loaded) {
+        // Verifikasi Plugin.php ada sebelum aktifkan
+        $entryFile = base_path("plugins/{$slug}/Plugin.php");
+        if (!File::exists($entryFile)) {
             return ['success' => false, 'message' => 'Gagal load plugin. Cek file Plugin.php.'];
         }
 
         $plugin->update(['is_active' => true]);
 
-        return ['success' => true, 'message' => "Plugin '{$plugin->name}' berhasil diaktifkan."];
+        return ['success' => true, 'message' => "Plugin '{$plugin->name}' berhasil diaktifkan. Halaman akan dimuat ulang."];
     }
 
     /**
