@@ -16,16 +16,18 @@ class Plugin extends ServiceProvider
 
         if (app()->runningInConsole()) return;
 
-        $this->app->make(MenuManager::class)->add([
-            'title'    => 'Users',
-            'url'      => route('users.index'),
-            'icon'     => 'ti ti-users',
-            'order'    => 5,
-            'active'   => 'users*',
-            'children' => [
-                ['title' => 'All Users', 'url' => route('users.index'),       'icon' => 'ti ti-user',   'active' => 'users'],
-                ['title' => 'Roles',     'url' => route('users.roles.index'), 'icon' => 'ti ti-shield', 'active' => 'users/roles*'],
-            ],
-        ]);
+        $this->app->booted(function () {
+            $this->app->make(MenuManager::class)->add([
+                'title'    => 'Users',
+                'url'      => route('users.index'),
+                'icon'     => 'ti ti-users',
+                'order'    => 5,
+                'active'   => 'users*',
+                'children' => [
+                    ['title' => 'All Users', 'url' => route('users.index'),       'icon' => 'ti ti-user',   'active' => 'users'],
+                    ['title' => 'Roles',     'url' => route('users.roles.index'), 'icon' => 'ti ti-shield', 'active' => 'users/roles*'],
+                ],
+            ]);
+        });
     }
 }

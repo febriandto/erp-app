@@ -342,5 +342,5 @@ Definisi CSS ada di `resources/css/app.css`. Alpine di-init di `resources/js/app
 7. **Micro animation** — gunakan class `.anim-fadein`, `.anim-stagger`, `.card-hover` dan Alpine `x-data="{ loading: false }"` sesuai standar di section "Micro Animation Standards"
 8. **Migration path plugin** — PluginManager mencari di `plugins/{slug}/migrations` ATAU `plugins/{slug}/database/migrations` (auto-detect). Plugin baru bebas pakai salah satu, tapi WAJIB konsisten dalam satu plugin
 9. **Sub-menu sidebar** — plugin wajib isi `children` di `MenuManager::add()` agar muncul di sidebar combo layout. Tanpa `children`, modul hanya muncul di top navbar
-10. **Console guard** — `MenuManager::add()` dan `route()` WAJIB dibungkus `if (app()->runningInConsole()) return;` di `Plugin::boot()`, karena route belum terdaftar saat `composer dump-autoload` / `artisan` dijalankan
+10. **Boot timing** — `MenuManager::add()` WAJIB dibungkus `$this->app->booted(function () { ... })` di dalam guard `if (app()->runningInConsole()) return;`. Ini memastikan `route()` dipanggil setelah semua provider selesai boot dan routing fully committed di Laravel 12
 11. **Core plugin** — plugin bawaan sistem ditandai `is_core = true` di tabel `plugins`. Plugin core tidak bisa di-uninstall/deactivate dari UI. Daftarkan via `CorePluginSeeder`, bukan via Plugin Manager
