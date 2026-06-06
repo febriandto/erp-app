@@ -78,6 +78,17 @@ CREATE DATABASE erp_app;
 php artisan migrate
 ```
 
+**4c.** Isi data awal (admin, role, dan modul inti):
+
+```bash
+php artisan db:seed
+```
+
+Perintah ini membuat:
+- Akun **Administrator** (login pertama kali)
+- Role `admin` dengan akses penuh
+- Modul inti: **User Management** dan **Master Data**
+
 ---
 
 ## Langkah 5 — Jalankan Aplikasi
@@ -88,7 +99,14 @@ php artisan serve
 
 Buka browser dan akses: **http://localhost:8000**
 
-Aplikasi siap digunakan.
+### Login pertama kali
+
+| Field | Value |
+|---|---|
+| Email / Username | `admin@erp.local` atau `admin` |
+| Password | `password` |
+
+> **Penting:** Segera ganti password setelah login pertama kali melalui menu profil.
 
 ---
 
@@ -96,36 +114,16 @@ Aplikasi siap digunakan.
 
 Plugin diinstall langsung dari dalam aplikasi — **tidak perlu Git atau akun GitHub.**
 
-1. Buka **http://localhost:8000/admin/plugins**
+1. Buka menu **Plugins** di navbar kanan atas *(hanya tampil untuk Administrator)*
 2. Scroll ke bagian **Plugin Marketplace**
 3. Klik tombol **Install** pada plugin yang diinginkan
 4. Tunggu proses download selesai
-5. Klik **Activate** untuk mengaktifkan plugin
+5. Klik **Actions → Activate** untuk mengaktifkan plugin
 
-![Plugin Manager](https://placehold.co/800x300?text=Plugin+Manager)
-
----
-
-## Troubleshooting
-
-### "php is not recognized..."
-PHP belum ditambahkan ke PATH. Tambahkan folder PHP ke System Environment Variables, atau gunakan path lengkap:
-```bash
-C:\php\php.exe artisan serve
-```
-
-### "SQLSTATE: Connection refused"
-MySQL belum berjalan. Buka **Services** di Windows dan start **MySQL**.
-
-### Plugin gagal diinstall
-- Pastikan koneksi internet aktif
-- Pastikan folder `plugins/` dapat ditulis (write permission)
-
-### Halaman error setelah activate plugin
-```bash
-php artisan cache:clear
-php artisan config:clear
-```
+Plugin yang tersedia di marketplace:
+- **Accounting** — invoice dan pembukuan
+- **Inventory** — manajemen produk dan stok
+- **Sales Order** — manajemen penjualan
 
 ---
 
@@ -139,6 +137,39 @@ php artisan serve
 ```
 
 Lalu buka **http://localhost:8000**.
+
+---
+
+## Troubleshooting
+
+### "php is not recognized..."
+PHP belum ditambahkan ke PATH. Gunakan path lengkap:
+```bash
+C:\php\php.exe artisan serve
+```
+
+### "SQLSTATE: Connection refused"
+MySQL belum berjalan. Buka **Services** di Windows dan start **MySQL**.
+
+### Menu "Plugins" tidak muncul di navbar
+Menu Plugins hanya tampil untuk akun dengan role **Administrator**. Pastikan login menggunakan akun admin.
+
+### Plugin gagal diinstall
+- Pastikan koneksi internet aktif
+- Pastikan folder `plugins/` dapat ditulis (write permission)
+- Coba lagi — kadang timeout saat download dari GitHub
+
+### Halaman error setelah activate plugin
+```bash
+php artisan cache:clear
+php artisan config:clear
+```
+
+### Lupa password admin
+```bash
+php artisan tinker
+> App\Models\User::where('email','admin@erp.local')->first()->update(['password' => bcrypt('password_baru')]);
+```
 
 ---
 

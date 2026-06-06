@@ -122,59 +122,6 @@
                     </td>
                 </tr>
                 @endforelse
-                @foreach($installed as $plugin)
-                {{-- Modal Uninstall --}}
-                <div class="modal modal-blur fade" id="modal-uninstall-{{ $plugin->slug }}"
-                    tabindex="-1" role="dialog" aria-hidden="true">
-                    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
-                        <div class="modal-content">
-                            <div class="modal-body">
-                                <div class="modal-title">Uninstall {{ $plugin->name }}</div>
-                                <div class="text-muted mt-1">Pilih opsi uninstall:</div>
-                            </div>
-                            <div class="modal-footer">
-                                <div class="w-100">
-
-                                    {{-- Keep Data --}}
-                                    <form action="{{ route('plugins.uninstall', $plugin) }}" method="POST" class="mb-2">
-                                        @csrf @method('DELETE')
-                                        <input type="hidden" name="remove_data" value="0">
-                                        <button type="submit" class="btn w-100 text-start">
-                                            <div class="d-flex align-items-center">
-                                                <i class="ti ti-database me-2"></i>
-                                                <div>
-                                                    <div>Uninstall — Keep Data</div>
-                                                    <div class="text-muted small fw-normal">Tabel & data tetap tersimpan</div>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </form>
-
-                                    {{-- Remove Data --}}
-                                    <form action="{{ route('plugins.uninstall', $plugin) }}" method="POST" class="mb-2">
-                                        @csrf @method('DELETE')
-                                        <input type="hidden" name="remove_data" value="1">
-                                        <button type="submit" class="btn btn-danger w-100 text-start"
-                                            onclick="return confirm('Yakin? Semua data {{ $plugin->name }} akan dihapus permanen!')">
-                                            <div class="d-flex align-items-center">
-                                                <i class="ti ti-trash me-2"></i>
-                                                <div>
-                                                    <div>Uninstall — Remove Data</div>
-                                                    <div class="small fw-normal opacity-75">Hapus tabel & semua data</div>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </form>
-
-                                    <button type="button" class="btn btn-link w-100 text-muted"
-                                        data-bs-dismiss="modal">Cancel</button>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
             </tbody>
         </table>
     </div>
@@ -247,5 +194,55 @@
         @endif
     </div>
 </div>
+
+{{-- Modals Uninstall — di luar table agar tidak jadi invalid HTML --}}
+@foreach($installed as $plugin)
+@if(!$plugin->is_core)
+<div class="modal modal-blur fade" id="modal-uninstall-{{ $plugin->slug }}"
+    tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="modal-title">Uninstall {{ $plugin->name }}</div>
+                <div class="text-muted mt-1">Pilih opsi uninstall:</div>
+            </div>
+            <div class="modal-footer">
+                <div class="w-100">
+                    <form action="{{ route('plugins.uninstall', $plugin) }}" method="POST" class="mb-2">
+                        @csrf @method('DELETE')
+                        <input type="hidden" name="remove_data" value="0">
+                        <button type="submit" class="btn w-100 text-start">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-database me-2"></i>
+                                <div>
+                                    <div>Uninstall — Keep Data</div>
+                                    <div class="text-muted small fw-normal">Tabel & data tetap tersimpan</div>
+                                </div>
+                            </div>
+                        </button>
+                    </form>
+                    <form action="{{ route('plugins.uninstall', $plugin) }}" method="POST" class="mb-2">
+                        @csrf @method('DELETE')
+                        <input type="hidden" name="remove_data" value="1">
+                        <button type="submit" class="btn btn-danger w-100 text-start"
+                            onclick="return confirm('Yakin? Semua data {{ $plugin->name }} akan dihapus permanen!')">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-trash me-2"></i>
+                                <div>
+                                    <div>Uninstall — Remove Data</div>
+                                    <div class="small fw-normal opacity-75">Hapus tabel & semua data</div>
+                                </div>
+                            </div>
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-link w-100 text-muted"
+                        data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+@endforeach
 
 @endsection
