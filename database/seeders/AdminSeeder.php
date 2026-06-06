@@ -18,6 +18,7 @@ class AdminSeeder extends Seeder
             ['name' => 'inventory.view',    'label' => 'View Inventory'],
             ['name' => 'inventory.manage',  'label' => 'Manage Inventory'],
             ['name' => 'users.manage',      'label' => 'Manage Users & Roles'],
+            ['name' => 'master-data.manage','label' => 'Manage Master Data'],
         ];
 
         foreach ($allPermissions as $perm) {
@@ -33,6 +34,7 @@ class AdminSeeder extends Seeder
             ['email' => 'admin@erp.local'],
             [
                 'name'     => 'Administrator',
+                'username' => 'admin',
                 'password' => bcrypt('password'),
             ]
         );

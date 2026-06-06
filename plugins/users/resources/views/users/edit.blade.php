@@ -29,6 +29,14 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Username <span class="text-muted">(opsional)</span></label>
+                        <input type="text" name="username" value="{{ old('username', $user->username) }}"
+                               class="form-control @error('username') is-invalid @enderror"
+                               placeholder="contoh: johndoe (huruf, angka, _ dan -)">
+                        @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Password Baru</label>
                         <input type="password" name="password"
                                class="form-control @error('password') is-invalid @enderror"

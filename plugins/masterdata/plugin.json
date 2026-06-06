@@ -1,0 +1,11 @@
+{
+    "name": "Master Data",
+    "slug": "masterdata",
+    "version": "1.0.0",
+    "description": "Data master lintas modul: mata uang, satuan ukur, pajak, dan profil perusahaan.",
+    "author": "febriandto",
+    "depends": [],
+    "permissions": [
+        {"name": "master-data.manage", "label": "Manage Master Data"}
+    ]
+}

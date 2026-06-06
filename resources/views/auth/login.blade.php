@@ -19,9 +19,9 @@
             <div class="card-body">
                 <h2 class="h2 text-center mb-4">Masuk ke akun Anda</h2>
 
-                @if($errors->any())
+                @if($errors->has('login'))
                 <div class="alert alert-danger alert-dismissible mb-3">
-                    {{ $errors->first() }}
+                    {{ $errors->first('login') }}
                     <a class="btn-close" data-bs-dismiss="alert"></a>
                 </div>
                 @endif
@@ -31,10 +31,11 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" value="{{ old('email') }}"
-                               class="form-control @error('email') is-invalid @enderror"
-                               placeholder="nama@perusahaan.com" autofocus required>
+                        <label class="form-label">Email atau Username</label>
+                        <input type="text" name="login" value="{{ old('login') }}"
+                               class="form-control @error('login') is-invalid @enderror"
+                               placeholder="email@perusahaan.com atau username" autofocus required autocomplete="username">
+                        @error('login')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="mb-2">

@@ -22,5 +22,19 @@ class CorePluginSeeder extends Seeder
                 'installed_at'   => now(),
             ]
         );
+
+        Plugin::updateOrCreate(
+            ['slug' => 'masterdata'],
+            [
+                'name'           => 'Master Data',
+                'version'        => '1.0.0',
+                'description'    => 'Data master lintas modul: mata uang, satuan ukur, pajak, dan profil perusahaan.',
+                'author'         => 'febriandto',
+                'is_active'      => true,
+                'is_core'        => true,
+                'installed_path' => 'plugins/masterdata',
+                'installed_at'   => now(),
+            ]
+        );
     }
 }
