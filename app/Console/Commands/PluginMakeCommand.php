@@ -27,6 +27,7 @@ class PluginMakeCommand extends Command
         $author      = $this->ask('Author', 'febriandto');
         $icon        = $this->ask('Tabler icon (e.g. ti ti-shopping-cart)', 'ti ti-puzzle');
         $order       = $this->ask('Menu order', '100');
+        $githubUser  = $this->ask('GitHub username (untuk workflow registry)', $author);
 
         $targetPath = base_path("plugins/{$slug}");
 
@@ -48,11 +49,13 @@ class PluginMakeCommand extends Command
             "{$targetPath}/Models",
             "{$targetPath}/migrations",
             "{$targetPath}/resources/views",
+            "{$targetPath}/.github/workflows",
         ] as $dir) {
             File::makeDirectory($dir, 0755, true, true);
         }
 
         $ts    = now()->format('Y_m_d_His');
+        $repoName = "erp-plugin-{$slug}";
         $files = [
             "{$targetPath}/plugin.json"
                 => $this->makePluginJson($slug, $displayName, $description, $author, $permPrefix),
@@ -72,6 +75,8 @@ class PluginMakeCommand extends Command
                 => $this->makeViewForm($displayName, $slug, 'create'),
             "{$targetPath}/resources/views/edit.blade.php"
                 => $this->makeViewForm($displayName, $slug, 'edit'),
+            "{$targetPath}/.github/workflows/update-registry.yml"
+                => $this->makeWorkflow($githubUser, $repoName),
         ];
 
         foreach ($files as $path => $content) {
@@ -106,6 +111,12 @@ class PluginMakeCommand extends Command
         $this->line("  1. Edit <fg=cyan>plugins/{$slug}/plugin.json</> — sesuaikan depends jika butuh plugin lain");
         $this->line("  2. <fg=cyan>composer85 dump-autoload</>");
         $this->line("  3. Activate via Plugin Manager di browser");
+        $this->newLine();
+        $this->line('  <fg=yellow>Untuk publish ke marketplace:</>');
+        $this->line("  1. Buat repo GitHub: <fg=cyan>https://github.com/new</> → nama: <fg=cyan>erp-plugin-{$slug}</>");
+        $this->line("  2. <fg=cyan>cd plugins/{$slug} && git init && git remote add origin git@github.com:{$githubUser}/erp-plugin-{$slug}.git</>");
+        $this->line("  3. Tambah secret <fg=cyan>REGISTRY_TOKEN</> di repo settings → Actions secrets");
+        $this->line("  4. Push & buat release → workflow otomatis daftar ke marketplace");
         $this->newLine();
 
         return self::SUCCESS;
@@ -439,5 +450,37 @@ BLADE;
 </div>
 @endsection
 BLADE;
+    }
+
+    private function makeWorkflow(string $githubUser, string $repoName): string
+    {
+        // Workflow ini di-trigger saat release di-publish di GitHub.
+        // Otomatis kirim notifikasi ke erp-plugin-registry supaya plugin
+        // terdaftar di marketplace. Butuh secret REGISTRY_TOKEN di repo settings.
+        return <<<YAML
+name: Publish to Registry
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to ERP Registry
+        run: |
+          curl -X POST \\
+            -H "Authorization: Bearer \${{ secrets.REGISTRY_TOKEN }}" \\
+            -H "Accept: application/vnd.github.v3+json" \\
+            https://api.github.com/repos/{$githubUser}/erp-plugin-registry/dispatches \\
+            -d "{
+              \\"event_type\\": \\"plugin-release\\",
+              \\"client_payload\\": {
+                \\"github_url\\": \\"https://github.com/\${{ github.repository }}\\",
+                \\"download_url\\": \\"https://github.com/\${{ github.repository }}/archive/refs/tags/\${{ github.ref_name }}.zip\\"
+              }
+            }"
+YAML;
     }
 }
