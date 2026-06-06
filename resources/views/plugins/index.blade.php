@@ -49,73 +49,69 @@
                         <span class="badge bg-secondary">Inactive</span>
                         @endif
                     </td>
-                    <td x-data="{ loading: false }">
+                    <td>
                         <div class="d-flex align-items-center gap-2">
-                            {{-- Tombol Update muncul prominently saat ada versi baru --}}
-                            @if($hasUpdate && $plugin->github_url)
-                            <form action="{{ route('plugins.update', $plugin) }}" method="POST"
-                                  x-data="{ loading: false }" @submit="loading = true">
-                                @csrf
-                                <input type="hidden" name="download_url" value="{{ $latestDownloadUrls[$plugin->slug] ?? '' }}">
-                                <button class="btn btn-sm btn-warning" type="submit">
-                                    <span x-show="!loading">
-                                        <i class="ti ti-download me-1"></i>Update
-                                    </span>
-                                    <span x-show="loading" x-cloak>
-                                        <span class="spinner-border spinner-border-sm me-1"></span>Updating...
-                                    </span>
-                                </button>
-                            </form>
-                            @endif
-
-                            <div class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                                    Actions
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    @if($plugin->is_active)
-                                    <form action="{{ route('plugins.deactivate', $plugin) }}" method="POST"
-                                          x-data="{ loading: false }" @submit="loading = true">
-                                        @csrf
-                                        <button class="dropdown-item text-warning" type="submit">
-                                            <span x-show="!loading">Deactivate</span>
-                                            <span x-show="loading" x-cloak>
-                                                <span class="spinner-border spinner-border-sm me-1"></span>Loading...
-                                            </span>
-                                        </button>
-                                    </form>
-                                    @else
-                                    <form action="{{ route('plugins.activate', $plugin) }}" method="POST"
-                                          x-data="{ loading: false }" @submit="loading = true">
-                                        @csrf
-                                        <button class="dropdown-item text-success" type="submit">
-                                            <span x-show="!loading">Activate</span>
-                                            <span x-show="loading" x-cloak>
-                                                <span class="spinner-border spinner-border-sm me-1"></span>Loading...
-                                            </span>
-                                        </button>
-                                    </form>
-                                    @endif
-                                    @if($plugin->github_url && !$hasUpdate)
-                                    <form action="{{ route('plugins.update', $plugin) }}" method="POST"
-                                          x-data="{ loading: false }" @submit="loading = true">
-                                        @csrf
-                                        <button class="dropdown-item" type="submit">
-                                            <span x-show="!loading">Check Update</span>
-                                            <span x-show="loading" x-cloak>
-                                                <span class="spinner-border spinner-border-sm me-1"></span>Loading...
-                                            </span>
-                                        </button>
-                                    </form>
-                                    @endif
-                                    <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item text-danger"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modal-uninstall-{{ $plugin->slug }}">
-                                        Uninstall
+                            @if($plugin->is_core)
+                                <span class="badge bg-purple-lt">
+                                    <i class="ti ti-lock me-1"></i>Core
+                                </span>
+                            @else
+                                {{-- Tombol Update --}}
+                                @if($hasUpdate && $plugin->github_url)
+                                <form action="{{ route('plugins.update', $plugin) }}" method="POST"
+                                      x-data="{ loading: false }" @submit="loading = true">
+                                    @csrf
+                                    <input type="hidden" name="download_url" value="{{ $latestDownloadUrls[$plugin->slug] ?? '' }}">
+                                    <button class="btn btn-sm btn-warning" type="submit">
+                                        <span x-show="!loading"><i class="ti ti-download me-1"></i>Update</span>
+                                        <span x-show="loading" x-cloak>
+                                            <span class="spinner-border spinner-border-sm me-1"></span>Updating...
+                                        </span>
                                     </button>
+                                </form>
+                                @endif
+
+                                <div class="dropdown">
+                                    <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        @if($plugin->is_active)
+                                        <form action="{{ route('plugins.deactivate', $plugin) }}" method="POST"
+                                              x-data="{ loading: false }" @submit="loading = true">
+                                            @csrf
+                                            <button class="dropdown-item text-warning" type="submit">
+                                                <span x-show="!loading">Deactivate</span>
+                                                <span x-show="loading" x-cloak><span class="spinner-border spinner-border-sm me-1"></span>Loading...</span>
+                                            </button>
+                                        </form>
+                                        @else
+                                        <form action="{{ route('plugins.activate', $plugin) }}" method="POST"
+                                              x-data="{ loading: false }" @submit="loading = true">
+                                            @csrf
+                                            <button class="dropdown-item text-success" type="submit">
+                                                <span x-show="!loading">Activate</span>
+                                                <span x-show="loading" x-cloak><span class="spinner-border spinner-border-sm me-1"></span>Loading...</span>
+                                            </button>
+                                        </form>
+                                        @endif
+                                        @if($plugin->github_url && !$hasUpdate)
+                                        <form action="{{ route('plugins.update', $plugin) }}" method="POST"
+                                              x-data="{ loading: false }" @submit="loading = true">
+                                            @csrf
+                                            <button class="dropdown-item" type="submit">
+                                                <span x-show="!loading">Check Update</span>
+                                                <span x-show="loading" x-cloak><span class="spinner-border spinner-border-sm me-1"></span>Loading...</span>
+                                            </button>
+                                        </form>
+                                        @endif
+                                        <div class="dropdown-divider"></div>
+                                        <button class="dropdown-item text-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modal-uninstall-{{ $plugin->slug }}">
+                                            Uninstall
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
                     </td>
                 </tr>
