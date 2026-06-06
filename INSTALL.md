@@ -140,6 +140,24 @@ Lalu buka **http://localhost:8000**.
 
 ---
 
+## Update Aplikasi
+
+Untuk mendapatkan versi terbaru aplikasi, jalankan **satu perintah** ini:
+
+```bash
+php artisan app:update
+```
+
+Perintah ini otomatis:
+- Download update terbaru dari server
+- Sync plugin yang ada
+- Jalankan migrasi database baru (jika ada)
+- Bersihkan cache
+
+> **Catatan:** Tidak perlu menjalankan `git pull` secara manual.
+
+---
+
 ## Troubleshooting
 
 ### "php is not recognized..."
@@ -163,6 +181,13 @@ Menu Plugins hanya tampil untuk akun dengan role **Administrator**. Pastikan log
 ```bash
 php artisan cache:clear
 php artisan config:clear
+```
+
+### Halaman error setelah update aplikasi
+Jika muncul error setelah `app:update`, coba bersihkan cache manual:
+```bash
+php artisan view:clear
+php artisan cache:clear
 ```
 
 ### Lupa password admin
