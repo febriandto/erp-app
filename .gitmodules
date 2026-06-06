@@ -10,3 +10,6 @@
 [submodule "plugins/accounting"]
 	path = plugins/accounting
 	url = git@github.com:febriandto/erp-plugin-accounting.git
+[submodule "plugins/sales-order"]
+	path = plugins/sales-order
+	url = https://github.com/febriandto/erp-plugin-sales-order.git
