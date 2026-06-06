@@ -1,0 +1,18 @@
+{
+    "name": "Sales Order",
+    "slug": "sales-order",
+    "version": "1.0.0",
+    "description": "Sales Order management module",
+    "author": "febriandto",
+    "depends": [],
+    "permissions": [
+        {
+            "name": "sales-order.view",
+            "label": "View Sales Order"
+        },
+        {
+            "name": "sales-order.manage",
+            "label": "Manage Sales Order"
+        }
+    ]
+}
