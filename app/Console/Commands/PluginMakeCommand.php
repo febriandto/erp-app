@@ -124,10 +124,11 @@ class Plugin extends ServiceProvider
 {
     public function boot(): void
     {
+        \$this->loadMigrationsFrom(__DIR__ . '/migrations');
+
         if (app()->runningInConsole()) return;
 
         \$this->loadViewsFrom(__DIR__ . '/resources/views', '{$slug}');
-        \$this->loadMigrationsFrom(__DIR__ . '/migrations');
 
         Route::middleware(['web', 'auth'])->group(__DIR__ . '/routes.php');
 
