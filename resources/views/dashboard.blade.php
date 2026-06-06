@@ -1,5 +1,6 @@
 @extends('layouts.app')
 
+@section('no-sidebar')
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard')
 
