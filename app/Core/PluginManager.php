@@ -125,6 +125,8 @@ class PluginManager
             ]
         );
 
+        Artisan::call('view:clear');
+
         return ['success' => true, 'message' => "Plugin '{$manifest['name']}' berhasil diinstall. Silakan activate."];
     }
 
@@ -273,6 +275,8 @@ class PluginManager
                 'version' => $manifest['version'] ?? '1.0.0',
             ]);
         }
+
+        Artisan::call('view:clear');
 
         $newVersion = $manifest['version'] ?? '?';
         return ['success' => true, 'message' => "Plugin '{$plugin->name}' berhasil diupdate ke v{$newVersion}."];
