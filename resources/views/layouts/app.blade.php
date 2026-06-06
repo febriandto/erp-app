@@ -73,7 +73,7 @@
 
         {{-- TOP: Horizontal navbar — daftar modul --}}
         <header class="navbar navbar-expand-md d-print-none">
-            <div class="container-xl">
+            <div class="container-fluid">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -155,7 +155,7 @@
 
         {{-- Page header --}}
         <div class="page-header d-print-none">
-            <div class="container-xl">
+            <div class="container-fluid">
                 <div class="row g-2 align-items-center">
                     <div class="col">
                         @if(isset($breadcrumbs))
@@ -176,7 +176,7 @@
 
         {{-- Page body --}}
         <div class="page-body">
-            <div class="container-xl">
+            <div class="container-fluid">
 
                 @if(session('success'))
                 <div class="alert alert-success alert-dismissible mb-3" role="alert">
@@ -199,7 +199,7 @@
 
         {{-- Footer --}}
         <footer class="footer footer-transparent d-print-none">
-            <div class="container-xl">
+            <div class="container-fluid">
                 <div class="row text-center align-items-center flex-row-reverse">
                     <div class="col-12 col-lg-auto mt-3 mt-lg-0">
                         <ul class="list-inline list-inline-dots mb-0">
