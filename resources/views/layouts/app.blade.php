@@ -23,15 +23,41 @@
             <div class="collapse navbar-collapse" id="sidebar-menu">
                 <ul class="navbar-nav pt-lg-3">
                     @foreach($sidebarItems as $item)
+                    @if(!empty($item['children']))
+                    {{-- Collapsible section --}}
+                    @php $sectionOpen = request()->is($item['active'] ?? ''); @endphp
+                    <li class="nav-item">
+                        <a class="nav-link {{ $sectionOpen ? '' : 'collapsed' }}"
+                           href="#sidebar-{{ \Illuminate\Support\Str::slug($item['title']) }}"
+                           data-bs-toggle="collapse" role="button"
+                           aria-expanded="{{ $sectionOpen ? 'true' : 'false' }}">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                <i class="{{ $item['icon'] }}"></i>
+                            </span>
+                            <span class="nav-link-title">{{ $item['title'] }}</span>
+                        </a>
+                        <div class="navbar-nav nav-item collapse {{ $sectionOpen ? 'show' : '' }}"
+                             id="sidebar-{{ \Illuminate\Support\Str::slug($item['title']) }}">
+                            @foreach($item['children'] as $sub)
+                            <a class="nav-link {{ request()->is($sub['active'] ?? '') ? 'active' : '' }}"
+                               href="{{ $sub['url'] }}">
+                                {{ $sub['title'] }}
+                            </a>
+                            @endforeach
+                        </div>
+                    </li>
+                    @else
+                    {{-- Flat link --}}
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is($item['active'] ?? '') ? 'active' : '' }}"
-                           href="{{ $item['url'] }}">
+                           href="{{ $item['url'] ?? '#' }}">
                             <span class="nav-link-icon d-md-none d-lg-inline-block">
                                 <i class="{{ $item['icon'] }}"></i>
                             </span>
                             <span class="nav-link-title">{{ $item['title'] }}</span>
                         </a>
                     </li>
+                    @endif
                     @endforeach
                 </ul>
             </div>
@@ -70,6 +96,7 @@
                         @endforeach
                     </ul>
                     <div class="ms-auto d-flex align-items-center gap-2">
+                        @if(auth()->user()->hasRole('admin'))
                         <ul class="navbar-nav">
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->is('admin/plugins*') ? 'active' : '' }}"
@@ -81,6 +108,7 @@
                                 </a>
                             </li>
                         </ul>
+                        @endif
 
                         {{-- User dropdown --}}
                         <div class="nav-item dropdown">

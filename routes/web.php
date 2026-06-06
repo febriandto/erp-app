@@ -14,7 +14,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/', fn() => view('dashboard'));
 
-    Route::prefix('admin/plugins')->name('plugins.')->group(function () {
+    Route::prefix('admin/plugins')->name('plugins.')->middleware('role:admin')->group(function () {
         Route::get('/',                          [PluginController::class, 'index'])->name('index');
         Route::post('/install',                  [PluginController::class, 'install'])->name('install');
         Route::post('/{plugin}/activate',        [PluginController::class, 'activate'])->name('activate');
