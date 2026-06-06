@@ -79,11 +79,11 @@
 [x-cloak] { display: none !important; }
 
 /* ==========================================================================
-   SIDEBAR ACTIVE STATE — lebih jelas dengan left border accent
+   SIDEBAR — active state + collapsible sub-menu
    ========================================================================== */
 
-/* Sidebar vertical (dark theme) */
-.navbar-vertical .navbar-nav .nav-link {
+/* Section header (level 2: Invoices, Expenses) */
+.navbar-vertical .navbar-nav > .nav-item > .nav-link {
     border-left: 3px solid transparent;
     border-radius: 0 6px 6px 0;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -91,18 +91,45 @@
     padding-inline: 10px;
 }
 
-.navbar-vertical .navbar-nav .nav-link.active {
+.navbar-vertical .navbar-nav > .nav-item > .nav-link.active,
+.navbar-vertical .navbar-nav > .nav-item > .nav-link[aria-expanded="true"] {
     border-left-color: var(--tblr-primary);
-    background-color: rgba(var(--tblr-primary-rgb), 0.18) !important;
+    background-color: rgba(var(--tblr-primary-rgb), 0.15) !important;
     color: #fff !important;
 }
 
-.navbar-vertical .navbar-nav .nav-link:not(.active):hover {
+.navbar-vertical .navbar-nav > .nav-item > .nav-link:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.06);
     color: rgba(255, 255, 255, 0.85);
 }
 
-/* Icon di link aktif ikut terang */
-.navbar-vertical .navbar-nav .nav-link.active .nav-link-icon {
+.navbar-vertical .navbar-nav > .nav-item > .nav-link.active .nav-link-icon {
     color: var(--tblr-primary);
+}
+
+/* Sub-items (level 3: All Invoices, Create Invoice) */
+.navbar-nav-sub {
+    margin-bottom: 4px;
+}
+
+.navbar-nav-sub .nav-link {
+    border-left: none !important;
+    padding: 0.375rem 1rem 0.375rem 3rem;
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.45);
+    border-radius: 4px;
+    margin: 1px 10px;
+    background: none !important;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.navbar-nav-sub .nav-link:hover {
+    color: rgba(255, 255, 255, 0.8) !important;
+    background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.navbar-nav-sub .nav-link.active {
+    color: #fff !important;
+    font-weight: 500;
+    background-color: rgba(var(--tblr-primary-rgb), 0.2) !important;
 }

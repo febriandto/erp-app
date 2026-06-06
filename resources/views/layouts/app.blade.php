@@ -35,15 +35,20 @@
                                 <i class="{{ $item['icon'] }}"></i>
                             </span>
                             <span class="nav-link-title">{{ $item['title'] }}</span>
+                            <span class="nav-link-toggle"></span>
                         </a>
-                        <div class="navbar-nav nav-item collapse {{ $sectionOpen ? 'show' : '' }}"
+                        <div class="collapse {{ $sectionOpen ? 'show' : '' }}"
                              id="sidebar-{{ \Illuminate\Support\Str::slug($item['title']) }}">
-                            @foreach($item['children'] as $sub)
-                            <a class="nav-link {{ request()->is($sub['active'] ?? '') ? 'active' : '' }}"
-                               href="{{ $sub['url'] }}">
-                                {{ $sub['title'] }}
-                            </a>
-                            @endforeach
+                            <ul class="navbar-nav navbar-nav-sub">
+                                @foreach($item['children'] as $sub)
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->is($sub['active'] ?? '') ? 'active' : '' }}"
+                                       href="{{ $sub['url'] }}">
+                                        {{ $sub['title'] }}
+                                    </a>
+                                </li>
+                                @endforeach
+                            </ul>
                         </div>
                     </li>
                     @else

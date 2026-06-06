@@ -47,14 +47,21 @@ class PluginManager
 
         require_once $entryFile;
 
-        $className = "Plugins\\{$slug}\\Plugin";
+        // Try slug as-is first (existing plugins: accounting, inventory, etc.)
+        // Then try PascalCase (new plugins with hyphens: sales-order → SalesOrder)
+        $candidates = [
+            "Plugins\\{$slug}\\Plugin",
+            "Plugins\\" . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $slug))) . "\\Plugin",
+        ];
 
-        if (!class_exists($className)) {
-            return false;
+        foreach ($candidates as $className) {
+            if (class_exists($className)) {
+                app()->register($className);
+                return true;
+            }
         }
 
-        app()->register($className);
-        return true;
+        return false;
     }
 
     /**
