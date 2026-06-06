@@ -91,18 +91,7 @@ Perintah ini membuat:
 
 ---
 
-## Langkah 5 — Build Frontend
-
-```bash
-npm install
-npm run build
-```
-
-Tunggu hingga selesai. Perintah ini menghasilkan file CSS/JS di `public/build/`.
-
----
-
-## Langkah 6 — Jalankan Aplikasi
+## Langkah 5 — Jalankan Aplikasi
 
 ```bash
 php artisan serve
@@ -169,13 +158,6 @@ Menu Plugins hanya tampil untuk akun dengan role **Administrator**. Pastikan log
 - Pastikan koneksi internet aktif
 - Pastikan folder `plugins/` dapat ditulis (write permission)
 - Coba lagi — kadang timeout saat download dari GitHub
-
-### "Vite manifest not found" / halaman blank saat pertama buka
-Frontend belum di-build. Jalankan:
-```bash
-npm install
-npm run build
-```
 
 ### Halaman error setelah activate plugin
 ```bash
