@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Plugins\users\Controllers\UserController;
 use Plugins\users\Controllers\RoleController;
 
-Route::prefix('users')->name('users.')->group(function () {
+Route::prefix('users')->name('users.')->middleware('can:users.manage')->group(function () {
     Route::get('/',                  [UserController::class, 'index'])->name('index');
     Route::get('/create',            [UserController::class, 'create'])->name('create');
     Route::post('/',                 [UserController::class, 'store'])->name('store');

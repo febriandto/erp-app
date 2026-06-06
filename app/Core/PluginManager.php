@@ -3,8 +3,9 @@
 namespace App\Core;
 
 use App\Models\Plugin;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
+use Spatie\Permission\Models\Permission;
 
 class PluginManager
 {
@@ -190,6 +191,14 @@ class PluginManager
                 '--path'  => $relativePath,
                 '--force' => true,
             ]);
+        }
+
+        // Seed permissions dari plugin.json
+        $manifest = $this->readManifest($slug);
+        if (!empty($manifest['permissions'])) {
+            foreach ($manifest['permissions'] as $perm) {
+                Permission::firstOrCreate(['name' => $perm['name'], 'guard_name' => 'web']);
+            }
         }
 
         // Load plugin sekarang juga

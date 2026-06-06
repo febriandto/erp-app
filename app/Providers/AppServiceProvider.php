@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Core\MenuManager;
 use App\Core\PluginManager;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -17,6 +18,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Admin role bypasses semua permission checks
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('admin') ? true : null;
+        });
+
         // Load semua plugin aktif
         $this->app->make(PluginManager::class)->loadActive();
 

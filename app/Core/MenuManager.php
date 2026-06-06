@@ -2,32 +2,49 @@
 
 namespace App\Core;
 
+use Illuminate\Support\Facades\Gate;
+
 class MenuManager
 {
     protected array $items = [];
 
-    /**
-     * Plugin memanggil ini untuk daftarkan menu
-     */
     public function add(array $item): void
     {
         $this->items[] = array_merge([
-            'title'    => '',
-            'url'      => '#',
-            'icon'     => 'ti ti-puzzle',
-            'order'    => 100,
-            'active'   => '',
-            'children' => [],
+            'title'      => '',
+            'url'        => '#',
+            'icon'       => 'ti ti-puzzle',
+            'order'      => 100,
+            'active'     => '',
+            'permission' => null,
+            'children'   => [],
         ], $item);
     }
 
-    /**
-     * Ambil semua menu, sorted by order
-     */
     public function all(): array
     {
-        $items = $this->items;
-        usort($items, fn($a, $b) => $a['order'] <=> $b['order']);
+        $user = auth()->user();
+
+        $items = collect($this->items)
+            ->filter(function ($item) use ($user) {
+                if (!$item['permission']) return true;
+                return $user && Gate::forUser($user)->allows($item['permission']);
+            })
+            ->map(function ($item) use ($user) {
+                $item['children'] = collect($item['children'])
+                    ->filter(function ($child) use ($user) {
+                        $perm = $child['permission'] ?? null;
+                        if (!$perm) return true;
+                        return $user && Gate::forUser($user)->allows($perm);
+                    })
+                    ->values()
+                    ->toArray();
+                return $item;
+            })
+            ->sortBy('order')
+            ->values()
+            ->toArray();
+
         return $items;
     }
 }

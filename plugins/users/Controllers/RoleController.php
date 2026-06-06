@@ -4,6 +4,7 @@ namespace Plugins\users\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -27,23 +28,29 @@ class RoleController extends Controller
 
         Role::create(['name' => $request->name]);
 
-        return redirect()->route('users.roles.index')->with('success', "Role '{$request->name}' berhasil dibuat.");
+        return redirect()->route('users.roles.index')
+            ->with('success', "Role '{$request->name}' berhasil dibuat.");
     }
 
     public function edit(Role $role)
     {
-        return view('users::roles.edit', compact('role'));
+        $permissions    = Permission::orderBy('name')->get()->groupBy(fn($p) => explode('.', $p->name)[0]);
+        $rolePermissions = $role->permissions->pluck('name')->toArray();
+        return view('users::roles.edit', compact('role', 'permissions', 'rolePermissions'));
     }
 
     public function update(Request $request, Role $role)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'name'        => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'permissions' => 'array',
         ]);
 
         $role->update(['name' => $request->name]);
+        $role->syncPermissions($request->permissions ?? []);
 
-        return redirect()->route('users.roles.index')->with('success', "Role berhasil diupdate.");
+        return redirect()->route('users.roles.index')
+            ->with('success', "Role '{$role->name}' berhasil diupdate.");
     }
 
     public function destroy(Role $role)
@@ -53,6 +60,7 @@ class RoleController extends Controller
         }
 
         $role->delete();
-        return redirect()->route('users.roles.index')->with('success', "Role '{$role->name}' berhasil dihapus.");
+        return redirect()->route('users.roles.index')
+            ->with('success', "Role '{$role->name}' berhasil dihapus.");
     }
 }

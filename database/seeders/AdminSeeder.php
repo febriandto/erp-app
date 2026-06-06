@@ -4,14 +4,31 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        // Seed semua permissions dari plugin.json yang ada
+        $allPermissions = [
+            ['name' => 'accounting.view',   'label' => 'View Accounting'],
+            ['name' => 'accounting.manage', 'label' => 'Manage Accounting'],
+            ['name' => 'inventory.view',    'label' => 'View Inventory'],
+            ['name' => 'inventory.manage',  'label' => 'Manage Inventory'],
+            ['name' => 'users.manage',      'label' => 'Manage Users & Roles'],
+        ];
 
+        foreach ($allPermissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm['name'], 'guard_name' => 'web']);
+        }
+
+        // Buat role admin dengan semua permissions
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole->syncPermissions(Permission::all());
+
+        // Buat user admin
         $admin = User::firstOrCreate(
             ['email' => 'admin@erp.local'],
             [
@@ -20,6 +37,6 @@ class AdminSeeder extends Seeder
             ]
         );
 
-        $admin->assignRole($adminRole);
+        $admin->syncRoles($adminRole);
     }
 }

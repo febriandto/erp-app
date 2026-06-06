@@ -4,5 +4,8 @@
     "version": "1.0.0",
     "description": "Kelola user, role, dan permission",
     "author": "febriandto",
-    "depends": []
+    "depends": [],
+    "permissions": [
+        {"name": "users.manage", "label": "Manage Users & Roles"}
+    ]
 }
