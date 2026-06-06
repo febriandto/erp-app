@@ -5,6 +5,13 @@
 
 @section('content')
 
+@if($errors->any())
+<div class="alert alert-danger alert-dismissible mb-3" role="alert">
+    <div>{{ $errors->first() }}</div>
+    <a class="btn-close" data-bs-dismiss="alert"></a>
+</div>
+@endif
+
 {{-- Installed Plugins --}}
 <div class="card mb-4 anim-fadein">
     <div class="card-header">
