@@ -49,13 +49,28 @@ class PluginManager
 
         // Try slug as-is first (existing plugins: accounting, inventory, etc.)
         // Then try PascalCase (new plugins with hyphens: sales-order → SalesOrder)
+        $pascalCase = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $slug)));
         $candidates = [
             "Plugins\\{$slug}\\Plugin",
-            "Plugins\\" . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $slug))) . "\\Plugin",
+            "Plugins\\{$pascalCase}\\Plugin",
         ];
 
         foreach ($candidates as $className) {
             if (class_exists($className)) {
+                // Register custom autoloader for PascalCase namespace → hyphenated folder
+                // (needed when classmap doesn't include the plugin, e.g. installed via marketplace)
+                $namespace = "Plugins\\{$pascalCase}\\";
+                $pluginPath = base_path("plugins/{$slug}/");
+                spl_autoload_register(function ($class) use ($namespace, $pluginPath) {
+                    if (str_starts_with($class, $namespace)) {
+                        $relative = str_replace($namespace, '', $class);
+                        $file = $pluginPath . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
+                        if (file_exists($file)) {
+                            require_once $file;
+                        }
+                    }
+                });
+
                 app()->register($className);
                 return true;
             }
