@@ -97,25 +97,71 @@ sales-order  →  folder: plugins/sales-order/
              →  view namespace: sales-order::
 ```
 
+Autoloading untuk hyphenated slug ditangani oleh **classmap** di `composer.json` — composer scan seluruh PHP file di `plugins/` tanpa peduli nama folder. Ini kenapa `composer85 dump-autoload` wajib dijalankan setelah scaffold plugin baru.
+
 ---
 
 ## 3. Setup Repository
 
-Untuk plugin yang akan di-publish ke marketplace, buat repo GitHub terpisah:
+Untuk plugin yang akan di-publish ke marketplace, buat repo GitHub terpisah.
+Ada dua flow tergantung dari mana kamu mulai:
 
-### 3a. Buat repo di GitHub
+### Flow A — Submodule dulu, baru coding
 
-Nama repo: `erp-plugin-{slug}` — contoh: `erp-plugin-hr`, `erp-plugin-crm`
-
-### 3b. Tambahkan sebagai submodule di erp-app
+Pakai ini jika repo sudah ada di GitHub sebelum mulai coding.
 
 ```bash
-# Di root erp-app
+# 1. Buat repo erp-plugin-{slug} di GitHub (boleh kosong)
+
+# 2. DARI ROOT erp-app — tambah sebagai submodule
 git submodule add https://github.com/{username}/erp-plugin-{slug}.git plugins/{slug}
 composer85 dump-autoload
+
+# 3. Develop di dalam submodule
+cd plugins/{slug}
+# edit/buat files...
+git add . && git commit -m "feat: ..." && git push
+
+# 4. Update pointer di repo utama
+cd ../..
+git add plugins/{slug}
+git commit -m "update {slug} plugin"
+git push
 ```
 
-### 3c. Develop di dalam submodule
+### Flow B — plugin:make dulu, baru jadikan submodule
+
+Pakai ini jika sudah scaffold dengan `plugin:make` dan baru mau publish ke marketplace.
+
+```bash
+# 1. Buat repo erp-plugin-{slug} di GitHub (kosong)
+
+# 2. Init git DI DALAM folder plugin — bukan dari root erp-app
+cd plugins/{slug}
+git init
+git add .
+git commit -m "initial scaffold"
+git branch -M main
+git remote add origin https://github.com/{username}/erp-plugin-{slug}.git
+git push -u origin main
+
+# 3. Kembali ke ROOT erp-app
+cd ../..
+
+# 4. Hapus dari tracking langsung erp-app
+git rm -r plugins/{slug}
+
+# 5. Tambah sebagai submodule
+git submodule add https://github.com/{username}/erp-plugin-{slug}.git plugins/{slug}
+git commit -m "refactor: convert {slug} to git submodule"
+git push
+```
+
+> ⚠️ **Peringatan:** `git submodule add` **wajib** dijalankan dari **root `erp-app/`**, bukan dari dalam `plugins/`. Menjalankan dari `plugins/` akan membuat path ganda `plugins/plugins/{slug}/` yang salah.
+>
+> ⚠️ **Peringatan:** `plugin:make` hanya buat file, **tidak** init git repo. Jika kamu langsung `git add` dari dalam `plugins/{slug}/` tanpa `git init` dulu, perintah git akan berjalan di konteks `erp-app` (git traversal ke parent), bukan di repo plugin.
+
+### Develop setelah submodule terpasang
 
 ```bash
 cd plugins/{slug}
