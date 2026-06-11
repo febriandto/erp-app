@@ -14,6 +14,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/', fn() => view('dashboard'));
 
+    // Demo/preview halaman Laravel Licensing — bukan implementasi nyata
+    Route::get('/laravel-licensing', fn() => view('demo.licensing'))->name('demo.licensing');
+
     Route::prefix('admin/plugins')->name('plugins.')->middleware('role:admin')->group(function () {
         Route::get('/',                          [PluginController::class, 'index'])->name('index');
         Route::post('/install',                  [PluginController::class, 'install'])->name('install');
